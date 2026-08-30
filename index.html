@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>结构配件速算表（测试版）</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,"Microsoft YaHei",sans-serif;background:#f0f2f5;color:#333;font-size:13px}
+.header{background:linear-gradient(135deg,#1a3a5c 0%,#2d5f8a 100%);color:#fff;padding:20px 24px}
+.header h1{font-size:20px;font-weight:600;margin-bottom:6px}
+.header .subtitle{font-size:12px;opacity:0.85;line-height:1.6}
+.header .version{font-size:11px;opacity:0.7;margin-top:4px}
+.container{max-width:1400px;margin:0 auto;padding:16px}
+.filter-bar{background:#fff;border-radius:8px;padding:16px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.filter-group{display:flex;align-items:center;gap:8px}
+.filter-group label{font-size:12px;color:#666;font-weight:500}
+.filter-group select{padding:6px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;background:#fff;min-width:160px;cursor:pointer}
+.export-btn{padding:7px 18px;background:#1a3a5c;color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;font-weight:500}
+.export-btn:hover{background:#2d5f8a}
+.note-bar{background:#fff7e6;border:1px solid #ffd591;border-radius:6px;padding:10px 16px;margin-bottom:12px;font-size:12px;color:#874d00;line-height:1.6}
+.table-section{background:#fff;border-radius:8px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08);overflow:hidden}
+.table-section-title{background:#e6f0fa;padding:10px 16px;font-size:13px;font-weight:600;color:#1a3a5c;border-bottom:1px solid #d0dae6}
+.table-wrapper{overflow-x:auto}
+table.data-table{width:100%;border-collapse:collapse;font-size:12px}
+table.data-table th{background:#e8f0f8;color:#1a3a5c;font-weight:600;padding:8px 10px;text-align:center;border:1px solid #d0dae6;white-space:nowrap}
+table.data-table td{padding:6px 10px;border:1px solid #e8e8e8;vertical-align:middle;text-align:left}
+table.data-table td.num-cell{text-align:center;font-weight:600;color:#2d5f8a}
+table.data-table td.desc-cell{text-align:left}
+/* A列（组件名称/航空箱名称）居中 */
+table.data-table tr:not(.section-header):not(.note-row) td:first-child{text-align:center!important}
+/* 数量列、重量列保持原来的居中 */
+.cell-qty{text-align:center;font-weight:600;color:#2d5f8a;min-width:50px}
+/* 数量列(B列)全部居中 */
+table.data-table td:nth-child(2){text-align:center!important}
+.cell-weight{text-align:center;color:#d4380d;min-width:70px}
+/* section标题行 */
+.section-header td{background:#e6f0fa!important;font-weight:600;color:#1a3a5c;font-size:13px;text-align:center!important;vertical-align:middle;white-space:pre-line}
+.section-header td:first-child{text-align:left!important}
+/* 输入区表头 */
+.input-header td{text-align:center!important;vertical-align:middle;white-space:pre-line;font-weight:600;background:#f5f7fa}
+.input-header td:first-child{text-align:center!important}
+/* 输入区行 */
+.input-row td{font-weight:700!important;white-space:pre-line;vertical-align:middle;text-align:center;background:#fffbe6}
+.input-row td.hint-cell{text-align:left!important;padding-left:16px;font-weight:400;background:#fffbe6}
+/* 合并单元格 */
+table.data-table td.row-merge{vertical-align:middle;text-align:center}
+table.data-table td.col-merge{vertical-align:middle;text-align:center}
+/* 备注行 */
+.note-row td{background:#fafafa;color:#666;font-size:11px;font-style:italic}
+.empty-state{padding:40px;text-align:center;color:#999}
+.footer{text-align:center;padding:16px;color:#999;font-size:11px}
+input[type=number]{width:60px;padding:4px 6px;border:1px solid #faad14;border-radius:3px;font-size:13px;background:#fff;text-align:center}
+
+/* 右下角圆形齿轮按钮 */
+.fab-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:12px;z-index:999}
+.fab-btn{width:48px;height:48px;border-radius:50%;background:#1a3a5c;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);transition:all 0.2s;font-size:20px}
+.fab-btn:hover{filter:brightness(1.15);transform:scale(1.05)}
+.fab-btn.settings{background:#193a5b}
+.fab-btn.history{background:#597a9b}
+.fab-btn svg{width:24px;height:24px;fill:#fff}
+/* 弹窗遮罩 */
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:8px;width:90%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e8e8e8}
+.modal-header h3{font-size:16px;font-weight:600;color:#1a3a5c}
+.modal-close{width:32px;height:32px;border:none;background:transparent;cursor:pointer;font-size:20px;color:#999;display:flex;align-items:center;justify-content:center;border-radius:4px}
+.modal-close:hover{background:#f5f5f5;color:#333}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+/* 登录表单 */
+.login-form{display:flex;flex-direction:column;gap:16px}
+.login-form label{font-size:13px;color:#666;font-weight:500}
+.login-form input{padding:10px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;width:100%}
+.login-form input:focus{outline:none;border-color:#1a3a5c}
+.login-btn{padding:10px 20px;background:#1a3a5c;color:#fff;border:none;border-radius:4px;font-size:14px;cursor:pointer;font-weight:500}
+.login-btn:hover{background:#2d5f8a}
+.login-error{color:#d4380d;font-size:12px;display:none}
+/* 更新履历表格 */
+.update-log-table{width:100%;border-collapse:collapse;font-size:12px}
+.update-log-table th{background:#e8f0f8;color:#1a3a5c;font-weight:600;padding:8px 10px;text-align:left;border:1px solid #d0dae6}
+.update-log-table td{padding:6px 10px;border:1px solid #e8e8e8;vertical-align:top}
+.update-log-table tr:nth-child(even){background:#fafafa}
+/* 后台维护内容 */
+.admin-content{display:flex;flex-direction:column;gap:12px}
+.admin-item{padding:12px;border:1px solid #e8e8e8;border-radius:4px;cursor:pointer;transition:background 0.2s}
+.admin-item:hover{background:#f5f7fa}
+.admin-item h4{font-size:14px;color:#1a3a5c;margin-bottom:4px}
+.admin-item p{font-size:12px;color:#999}
+
+
+/* 文件上传区域 */
+.upload-area{border:2px dashed #d0dae6;border-radius:8px;padding:32px;text-align:center;cursor:pointer;transition:all 0.2s;background:#fafafa}
+.upload-area:hover{border-color:#1a3a5c;background:#f5f7fa}
+.upload-area.dragover{border-color:#1a3a5c;background:#e8f0f8}
+.upload-icon{font-size:48px;margin-bottom:12px;color:#999}
+.upload-text{font-size:14px;color:#666;margin-bottom:8px}
+.upload-hint{font-size:12px;color:#999}
+.upload-file-name{margin-top:12px;padding:8px 12px;background:#e8f0f8;border-radius:4px;font-size:13px;color:#1a3a5c;display:none}
+/* 更新统计 */
+.update-summary{margin-top:16px;padding:16px;background:#f6ffed;border:1px solid #b7eb8f;border-radius:6px;display:none}
+.update-summary h4{font-size:14px;color:#389e0d;margin-bottom:12px}
+.update-summary table{width:100%;font-size:12px;border-collapse:collapse}
+.update-summary th,.update-summary td{padding:6px 8px;border:1px solid #d9f7be;text-align:left}
+.update-summary th{background:#f6ffed;color:#389e0d;font-weight:600}
+.update-summary .total{font-weight:700;color:#389e0d;font-size:13px}
+/* 操作按钮 */
+.admin-actions{margin-top:16px;display:flex;gap:12px;justify-content:flex-end}
+.btn-cancel{padding:8px 20px;background:#fff;color:#666;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;cursor:pointer}
+.btn-cancel:hover{background:#f5f5f5}
+.btn-save{padding:8px 20px;background:#389e0d;color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;font-weight:500;display:none}
+.btn-save:hover{background:#52c41a}
+.btn-save:disabled{background:#95de64;cursor:not-allowed}
+/* 进度提示 */
+.progress-tip{margin-top:12px;padding:10px 14px;background:#e6f7ff;border:1px solid #91d5ff;border-radius:4px;font-size:12px;color:#0050b3;display:none}
+
+
+/* 附件管理 */
+.attachment-section{margin-top:20px;border-top:1px solid #e8e8e8;padding-top:16px}
+.attachment-section h4{font-size:14px;color:#1a3a5c;margin-bottom:12px}
+.attachment-list{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto}
+.attachment-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid #e8e8e8;border-radius:4px;background:#fafafa}
+.attachment-item .sheet-name{font-size:13px;font-weight:600;color:#1a3a5c;min-width:100px}
+.attachment-item .file-info{display:flex;gap:16px;flex:1}
+.attachment-item .file-slot{display:flex;align-items:center;gap:6px;font-size:12px;color:#666}
+.attachment-item .file-slot .file-name{color:#1890ff;cursor:pointer;text-decoration:underline;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.attachment-item .file-slot .file-name:hover{color:#40a9ff}
+.attachment-item .upload-btn{padding:4px 10px;background:#193a5b;color:#fff;border:none;border-radius:3px;font-size:11px;cursor:pointer}
+.attachment-item .upload-btn:hover{background:#2d5f8a}
+.attachment-item .delete-btn{padding:4px 8px;background:#fff;color:#ff4d4f;border:1px solid #ff4d4f;border-radius:3px;font-size:11px;cursor:pointer}
+.attachment-item .delete-btn:hover{background:#fff1f0}
+/* 前台附件下载区 */
+.sheet-attachments{background:#fff;border-radius:8px;padding:12px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.sheet-attachments .label{font-size:13px;font-weight:600;color:#1a3a5c}
+.sheet-attachments .download-link{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#f0f5fa;color:#193a5b;border-radius:4px;font-size:12px;text-decoration:none;transition:background 0.2s}
+.sheet-attachments .download-link:hover{background:#e0eaf5}
+.sheet-attachments .download-link .icon{font-size:14px}
+.sheet-attachments .no-file{font-size:12px;color:#999}
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+// ========== 后台维护 - Excel导入更新 ==========
+let pendingUpdate = null; // 待保存的更新数据
+
+// 拖拽上传
+document.addEventListener('DOMContentLoaded', function(){
+  const uploadArea = document.getElementById('uploadArea');
+  if(uploadArea){
+    uploadArea.addEventListener('dragover', function(e){
+      e.preventDefault();
+      this.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', function(e){
+      e.preventDefault();
+      this.classList.remove('dragover');
+    });
+    uploadArea.addEventListener('drop', function(e){
+      e.preventDefault();
+      this.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if(file) handleFileUpload(file);
+    });
+  }
+});
+
+// 处理文件上传
+function handleFileUpload(file){
+  if(!file) return;
+  
+  // 检查文件类型
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(ext !== 'xlsx' && ext !== 'xls'){
+    alert('请上传 .xlsx 或 .xls 格式的Excel文件');
+    return;
+  }
+  
+  document.getElementById('uploadFileName').style.display = 'block';
+  document.getElementById('uploadFileName').textContent = '已选择文件：' + file.name;
+  document.getElementById('progressTip').style.display = 'block';
+  document.getElementById('progressTip').textContent = '正在解析Excel文件...';
+  
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, {type:'array'});
+      parseAndCompare(workbook);
+    }catch(err){
+      document.getElementById('progressTip').textContent = '解析失败：' + err.message;
+      document.getElementById('progressTip').style.background = '#fff2f0';
+      document.getElementById('progressTip').style.borderColor = '#ffccc7';
+      document.getElementById('progressTip').style.color = '#cf1322';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// 解析Excel并对比数据
+function parseAndCompare(workbook){
+  document.getElementById('progressTip').textContent = '正在对比数据...';
+  
+  const newAllData = {};
+  const newInputMap = {};
+  const newMergeMap = {};
+  const summary = [];
+  let totalNew = 0, totalUpdated = 0, totalSheets = 0;
+  
+  workbook.SheetNames.forEach(sheetName => {
+    const worksheet = workbook.Sheets[sheetName];
+    const sheetData = {};
+    const inputs = [];
+    const merges = [];
+    
+    // 解析合并单元格
+    if(worksheet['!merges']){
+      worksheet['!merges'].forEach(merge => {
+        const startCol = numToCol(merge.s.c + 1);
+        const startRow = merge.s.r + 1;
+        const endCol = numToCol(merge.e.c + 1);
+        const endRow = merge.e.r + 1;
+        merges.push(startCol + startRow + ':' + endCol + endRow);
+      });
+    }
+    
+    // 解析单元格数据
+    for(const ref in worksheet){
+      if(ref[0] === '!') continue;
+      const cell = worksheet[ref];
+      let val = '';
+      if(cell.t === 's'){
+        val = cell.v;
+      }else if(cell.t === 'n'){
+        val = String(cell.v);
+      }else if(cell.t === 'b'){
+        val = cell.v ? 'TRUE' : 'FALSE';
+      }else if(cell.v !== undefined){
+        val = String(cell.v);
+      }
+      
+      if(val !== ''){
+        sheetData[ref] = {v: val};
+        
+        // 识别输入框（橙色背景）
+        if(cell.s && cell.s.fgColor && (cell.s.fgColor.rgb === 'FFFFC000' || cell.s.fgColor.rgb === 'FFC000')){
+          inputs.push(ref);
+        }
+      }
+    }
+    
+    newAllData[sheetName] = sheetData;
+    if(inputs.length > 0) newInputMap[sheetName] = inputs;
+    if(merges.length > 0) newMergeMap[sheetName] = merges;
+    
+    // 对比数据
+    const oldSheetData = ALL_DATA[sheetName] || {};
+    let newCount = 0, updatedCount = 0;
+    
+    for(const ref in sheetData){
+      if(!oldSheetData[ref]){
+        newCount++;
+      }else if(oldSheetData[ref].v !== sheetData[ref].v){
+        updatedCount++;
+      }
+    }
+    
+    totalNew += newCount;
+    totalUpdated += updatedCount;
+    totalSheets++;
+    
+    summary.push({
+      sheetName: sheetName,
+      oldCount: Object.keys(oldSheetData).length,
+      newCount: newCount,
+      updatedCount: updatedCount,
+      totalCount: Object.keys(sheetData).length,
+      status: (newCount > 0 || updatedCount > 0) ? '有更新' : '无变化'
+    });
+  });
+  
+  // 保存待更新数据
+  pendingUpdate = {
+    allData: newAllData,
+    inputMap: newInputMap,
+    mergeMap: newMergeMap,
+    summary: summary
+  };
+  
+  // 显示更新统计
+  showUpdateSummary(summary, totalNew, totalUpdated, totalSheets);
+  
+  document.getElementById('progressTip').textContent = '解析完成！请确认后点击保存';
+  document.getElementById('saveBtn').style.display = 'inline-block';
+}
+
+// 显示更新统计
+function showUpdateSummary(summary, totalNew, totalUpdated, totalSheets){
+  const tbody = document.querySelector('#summaryTable tbody');
+  tbody.innerHTML = '';
+  
+  summary.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + item.sheetName + '</td>' +
+                   '<td>' + item.oldCount + '</td>' +
+                   '<td style="color:#389e0d">' + (item.newCount > 0 ? '+' + item.newCount : '0') + '</td>' +
+                   '<td style="color:#fa8c16">' + (item.updatedCount > 0 ? item.updatedCount : '0') + '</td>' +
+                   '<td style="color:' + (item.status === '有更新' ? '#389e0d' : '#999') + '">' + item.status + '</td>';
+    tbody.appendChild(tr);
+  });
+  
+  document.getElementById('summaryTotal').textContent = 
+    '共 ' + totalSheets + ' 个Sheet，新增 ' + totalNew + ' 条数据，更新 ' + totalUpdated + ' 条数据';
+  
+  document.getElementById('updateSummary').style.display = 'block';
+}
+
+// 保存更新
+function saveUpdate(){
+  if(!pendingUpdate && !pendingAttachments){
+    alert('没有待保存的更新数据');
+    return;
+  }
+  
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = '正在保存...';
+  
+  try {
+    // 保存Excel数据
+    if(pendingUpdate){
+      Object.assign(ALL_DATA, pendingUpdate.allData);
+      Object.assign(INPUT_MAP, pendingUpdate.inputMap);
+      Object.assign(MERGE_MAP, pendingUpdate.mergeMap);
+      
+      // 更新下拉选项
+      const sheetSelect = document.getElementById('sheetSelect');
+      const currentValue = sheetSelect.value;
+      sheetSelect.innerHTML = '';
+      Object.keys(ALL_DATA).forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        sheetSelect.appendChild(option);
+      });
+      if(ALL_DATA[currentValue]){
+        sheetSelect.value = currentValue;
+      }else{
+        currentSheet = Object.keys(ALL_DATA)[0];
+        sheetSelect.value = currentSheet;
+      }
+    }
+    
+    // 保存附件数据
+    if(pendingAttachments){
+      ATTACHMENTS = JSON.parse(JSON.stringify(pendingAttachments));
+    }
+    
+    // 重新渲染
+    renderTable();
+    updateAttachmentDisplay();
+    
+    // 重置状态
+    pendingUpdate = null;
+    pendingAttachments = null;
+    
+    // 重置UI
+    saveBtn.disabled = false;
+    saveBtn.textContent = '保存并全覆盖';
+    saveBtn.style.display = 'none';
+    document.getElementById('updateSummary').style.display = 'none';
+    document.getElementById('uploadFileName').style.display = 'none';
+    document.getElementById('progressTip').style.display = 'none';
+    document.getElementById('excelFile').value = '';
+    
+    // 关闭弹窗
+    closeAdminModal();
+    
+    // 成功提示
+    setTimeout(function(){
+      alert('保存成功！数据已更新并刷新页面');
+    }, 100);
+    
+  } catch(e) {
+    console.error('保存错误:', e);
+    saveBtn.disabled = false;
+    saveBtn.textContent = '保存并全覆盖';
+    alert('保存失败：' + e.message);
+  }
+}
+
+// 关闭后台维护弹窗
+function closeAdminModal(){
+  closeModal('adminModal');
+  // 重置状态
+  pendingUpdate = null;
+  const saveBtn = document.getElementById('saveBtn');
+  if(saveBtn){
+    saveBtn.disabled = false;
+    saveBtn.textContent = '保存并全覆盖';
+    saveBtn.style.display = 'none';
+  }
+  const summary = document.getElementById('updateSummary');
+  if(summary) summary.style.display = 'none';
+  const fileName = document.getElementById('uploadFileName');
+  if(fileName) fileName.style.display = 'none';
+  const progress = document.getElementById('progressTip');
+  if(progress){
+    progress.style.display = 'none';
+    progress.style.background = '';
+    progress.style.borderColor = '';
+    progress.style.color = '';
+  }
+  const excelFile = document.getElementById('excelFile');
+  if(excelFile) excelFile.value = '';
+}
+
+
+// ========== 附件管理 ==========
+// 附件数据结构：{ sheetName: { dwg: {name, data, type}, pdf: {name, data, type} } }
+let ATTACHMENTS = {
+  "PL V3": {
+    "pdf": {
+      "name": "PL_V3_安装示意图.pdf",
+      "data": "data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA2MCA+PgpzdHJlYW0KQlQgL0YxIDI0IFRmIDEwMCA3MDAgVGQgKFBMIFYzIFRlc3QgQXR0YWNobWVudCkgVGogRVQKZW5kc3RyZWFtCmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL0hlbHZldGljYSA+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjY2IDAwMDAwIG4gCjAwMDAwMDAzNzUgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0NTIKJSVFT0Y=",
+      "type": "application/pdf"
+    }
+  }
+};
+let pendingAttachments = null;
+
+// 渲染附件列表（后台维护页面）
+function renderAttachmentList(){
+  const list = document.getElementById('attachmentList');
+  if(!list) return;
+  
+  const sheetNames = Object.keys(ALL_DATA);
+  list.innerHTML = '';
+  
+  sheetNames.forEach(sheetName => {
+    const item = document.createElement('div');
+    item.className = 'attachment-item';
+    
+    const att = pendingAttachments && pendingAttachments[sheetName] ? pendingAttachments[sheetName] : (ATTACHMENTS[sheetName] || {});
+    
+    const dwgFile = att.dwg;
+    const pdfFile = att.pdf;
+    
+    item.innerHTML = 
+      '<div class="sheet-name">' + sheetName + '</div>' +
+      '<div class="file-info">' +
+        '<div class="file-slot">' +
+          '<span>DWG:</span>' +
+          (dwgFile ? '<span class="file-name" title="' + dwgFile.name + '">' + dwgFile.name + '</span>' : '<span class="no-file">未上传</span>') +
+          '<button class="upload-btn" onclick="uploadAttachment(\'' + sheetName + '\', \'dwg\')">上传</button>' +
+          (dwgFile ? '<button class="delete-btn" onclick="deleteAttachment(\'' + sheetName + '\', \'dwg\')">删除</button>' : '') +
+        '</div>' +
+        '<div class="file-slot">' +
+          '<span>PDF:</span>' +
+          (pdfFile ? '<span class="file-name" title="' + pdfFile.name + '">' + pdfFile.name + '</span>' : '<span class="no-file">未上传</span>') +
+          '<button class="upload-btn" onclick="uploadAttachment(\'' + sheetName + '\', \'pdf\')">上传</button>' +
+          (pdfFile ? '<button class="delete-btn" onclick="deleteAttachment(\'' + sheetName + '\', \'pdf\')">删除</button>' : '') +
+        '</div>' +
+      '</div>';
+    
+    list.appendChild(item);
+  });
+}
+
+// 上传附件
+function uploadAttachment(sheetName, fileType){
+  const input = document.createElement('input');
+  input.type = 'file';
+  if(fileType === 'dwg'){
+    input.accept = '.dwg,.dxf';
+  }else{
+    input.accept = '.pdf';
+  }
+  
+  input.onchange = function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      if(!pendingAttachments) pendingAttachments = {};
+      if(!pendingAttachments[sheetName]) pendingAttachments[sheetName] = {};
+      
+      pendingAttachments[sheetName][fileType] = {
+        name: file.name,
+        data: ev.target.result, // base64 data URL
+        type: file.type
+      };
+      
+      renderAttachmentList();
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  input.click();
+}
+
+// 删除附件
+function deleteAttachment(sheetName, fileType){
+  if(!pendingAttachments || !pendingAttachments[sheetName]) return;
+  delete pendingAttachments[sheetName][fileType];
+  renderAttachmentList();
+}
+
+// 渲染前台附件下载区
+function updateAttachmentDisplay(){
+  const container = document.getElementById('attachmentContainer');
+  if(!container) return;
+  
+  const att = ATTACHMENTS[currentSheet];
+  if(!att || (!att.dwg && !att.pdf)){
+    // 没有附件时保留硬编码的测试附件，或者清空
+    // container.innerHTML = '';
+    return;
+  }
+  
+  let html = '<div class="sheet-attachments">';
+  html += '<span class="label">附件下载：</span>';
+  
+  if(att.dwg){
+    html += '<a class="download-link" href="' + att.dwg.data + '" download="' + att.dwg.name + '">' +
+            '<span class="icon">&#128230;</span> DWG文件：' + att.dwg.name + '</a>';
+  }
+  
+  if(att.pdf){
+    html += '<a class="download-link" href="' + att.pdf.data + '" download="' + att.pdf.name + '">' +
+            '<span class="icon">&#128196;</span> PDF文件：' + att.pdf.name + '</a>';
+  }
+  
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+
+
+
+
+</script>
+</head>
+<body>
+<div class="header">
+  <h1>结构配件速算表</h1>
+  <div class="subtitle">LED 显示屏结构配件 · 落地支架 / 背条 / 挂架 / 包边 自动计算工具</div>
+  <div class="version">黄色单元格为输入区，修改后自动计算配件数量 · 仅供参考，具体以实际下单为准</div>
+</div>
+<div class="container">
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>产品配置</label>
+      <select id="sheetSelect"><option value="PL V3">PL V3</option></select>
+    </div>
+    <div class="filter-group">
+      <label>配置类型</label>
+      <select id="typeSelect"><option value="all">全部类型</option></select>
+    </div>
+    <button class="export-btn" onclick="exportExcel()">导出Excel</button>
+  </div>
+  <div id="attachmentContainer">
+  <div class="sheet-attachments">
+    <span class="label">附件下载：</span>
+    <a class="download-link" href="data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA2MCA+PgpzdHJlYW0KQlQgL0YxIDI0IFRmIDEwMCA3MDAgVGQgKFBMIFYzIFRlc3QgQXR0YWNobWVudCkgVGogRVQKZW5kc3RyZWFtCmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL0hlbHZldGljYSA+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjY2IDAwMDAwIG4gCjAwMDAwMDAzNzUgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0NTIKJSVFT0Y=" download="PL_V3_安装示意图.pdf">
+      <span class="icon">&#128196;</span> PDF：PL_V3_安装示意图.pdf
+    </a>
+  </div>
+</div><div id="tableContainer"></div>
+</div>
+<div class="footer">结构配件速算表 · 测试版 · 仅供参考</div>
+
+<script>
+const ALL_DATA = {"PL V3": {"A1": {"v": "PL V3-落地支架计算公式(PL V3 Series Calculation Formula)-采用23旧款落地支架（请注意：是输入箱体的数量，不是尺寸）", "f": null}, "B1": {"v": "", "f": null}, "C1": {"v": "", "f": null}, "D1": {"v": "", "f": null}, "E1": {"v": "", "f": null}, "F1": {"v": "", "f": null}, "G1": {"v": "", "f": null}, "H1": {"v": "", "f": null}, "I1": {"v": "", "f": null}, "A2": {"v": "落地支架最大支持5米高度\nMaximum height of 5 meters", "f": null}, "B2": {"v": "宽度Width", "f": null}, "C2": {"v": "高度Height\n（500*500mm）", "f": null}, "D2": {"v": "高度Height\n（500*1000mm）", "f": null}, "E2": {"v": "", "f": null}, "F2": {"v": "", "f": null}, "G2": {"v": "", "f": null}, "H2": {"v": "", "f": null}, "I2": {"v": "", "f": null}, "A3": {"v": "排列方式:\nInput screen width and height\nPanels Matrix (W x H):", "f": null}, "B3": {"v": "12", "f": null}, "C3": {"v": "3", "f": null}, "D3": {"v": "2", "f": null}, "E3": {"v": "←请在左侧输入箱体排列（箱体的数量）\n←​Input cabinet arrangement on the left.", "f": null}, "F3": {"v": "", "f": null}, "G3": {"v": "", "f": null}, "H3": {"v": "", "f": null}, "I3": {"v": "", "f": null}, "A4": {"v": "", "f": null}, "B4": {"v": "", "f": null}, "C4": {"v": "", "f": null}, "D4": {"v": "", "f": null}, "E4": {"v": "", "f": null}, "F4": {"v": "", "f": null}, "G4": {"v": "", "f": null}, "H4": {"v": "", "f": null}, "I4": {"v": "", "f": null}, "A5": {"v": "落地支架(Ground Stacking Components)：", "f": null}, "B5": {"v": "", "f": null}, "C5": {"v": "", "f": null}, "D5": {"v": "", "f": null}, "E5": {"v": "", "f": null}, "F5": {"v": "", "f": null}, "G5": {"v": "", "f": null}, "H5": {"v": "", "f": null}, "I5": {"v": "", "f": null}, "A6": {"v": "组件名称\nComponents", "f": null}, "B6": {"v": "数量\nQuantity", "f": null}, "C6": {"v": "SAP料号\nSAP NO.", "f": null}, "D6": {"v": "物料描述\nMaterial Description", "f": null}, "E6": {"v": "计算逻辑\nCalculation Logic", "f": null}, "F6": {"v": "单个部件重量\nWeight", "f": null}, "G6": {"v": "", "f": null}, "H6": {"v": "", "f": null}, "I6": {"v": "", "f": null}, "A7": {"v": "PL单倍落地底座-7.5度弧度\nSingle Base Stand", "f": null}, "B7": {"v": "12", "f": "B3"}, "C7": {"v": "30306L1S90400R091", "f": null}, "D7": {"v": "PL1.9 Pro V10 PL系列 单倍弧形落地底座 AL6061 喷粉 黑色 500 -7.5弧度  优化弧度块版\n如需双倍底座，请注意替换；数量为单倍底座的1/2；（料号：30306L1S90400R092）", "f": null}, "E7": {"v": "数量等于列数", "f": null}, "F7": {"v": "≈7.2KG", "f": null}, "G7": {"v": "", "f": null}, "H7": {"v": "", "f": null}, "I7": {"v": "", "f": null}, "A8": {"v": "梯形架底座_0.8米\nOutrigger", "f": null}, "B8": {"v": "7", "f": "ROUNDDOWN(B3/2+1,0)"}, "C8": {"v": "30306L2S91300R064", "f": null}, "D8": {"v": "PL2.9 2代落地架 梯形架底座0.8米 加装垫高块 AL5052 喷粉 黑色 0 尾部有安装架", "f": null}, "E8": {"v": "（列数/2）+1，向下取整", "f": null}, "F8": {"v": "≈12.54KG", "f": null}, "G8": {"v": "", "f": null}, "H8": {"v": "", "f": null}, "I8": {"v": "", "f": null}, "A9": {"v": "梯形支架_1米\n1m Long Ladder", "f": null}, "B9": {"v": "21", "f": "IF(C3=0,D3*B8,(ROUNDUP((C3-1)*0.5,0))*B8+D3*B8)"}, "C9": {"v": "30306L2S50900R015", "f": null}, "D9": {"v": "2代落地架_梯形支架_1米 铝合金 黑色喷粉   ROHS", "f": null}, "E9": {"v": "见B9计算逻辑", "f": null}, "F9": {"v": "≈5.5KG", "f": null}, "G9": {"v": "", "f": null}, "H9": {"v": "", "f": null}, "I9": {"v": "", "f": null}, "A10": {"v": "梯形支架_0.5米\n0.5m Long Ladder", "f": null}, "B10": {"v": "7", "f": "IF(MOD(C3,2)<>0,ROUNDUP((B3+1)/2,0),0)"}, "C10": {"v": "30306L2S50900R008", "f": null}, "D10": {"v": "2代落地架 梯形支架0.5米 铝合金 黑色喷粉   ROHS", "f": null}, "E10": {"v": "500箱体高度数量为奇数时才需要，个数等于B8.否则为0", "f": null}, "F10": {"v": "≈3.57KG", "f": null}, "G10": {"v": "", "f": null}, "H10": {"v": "", "f": null}, "I10": {"v": "", "f": null}, "A11": {"v": "PL系列箱体抓手_固定梯形架\nClamp", "f": null}, "B11": {"v": "28", "f": "IF(C3=0,D3*B8,(ROUND((C3+1)*0.5,0))*B8+D3*B8)"}, "C11": {"v": "30306X1S50900R006", "f": null}, "D11": {"v": "AX/PL/XV 通用落地架抓手 铝合金 黑色喷粉   ROHS,", "f": null}, "E11": {"v": "数量等于箱体（高度数量+1）/2*B8，向上取整（每隔一层配一个抓手）\n如需要满配，抓手数量重新计算", "f": null}, "F11": {"v": "≈1.46KG", "f": null}, "G11": {"v": "", "f": null}, "H11": {"v": "", "f": null}, "I11": {"v": "", "f": null}, "A12": {"v": "可伸缩拉杆 _0.5米\n0.5m Short Horizontal Adjustable Beam", "f": null}, "B12": {"v": "1", "f": "IF(MOD(B3,2)=0,IF(OR(C3/2>4,D3>4,C3/2+D3>4),2,1),0)"}, "C12": {"v": "30306L2S50900R011", "f": null}, "D12": {"v": "2代落地架 可伸缩拉杆 0.5米长 铝合金 黑色喷粉   ROHS", "f": null}, "E12": {"v": "列数为偶数的时候,若总高度≤4米为1，大于4米为2，列数奇数的情况下为0", "f": null}, "F12": {"v": "≈1.977KG", "f": null}, "G12": {"v": "", "f": null}, "H12": {"v": "", "f": null}, "I12": {"v": "", "f": null}, "A13": {"v": "可伸缩拉杆 _1米\n1m Long Horizontal Adjustable Beam", "f": null}, "B13": {"v": "5", "f": "IF(OR(C3/2>4,D3>4,C3/2+D3>4),2*IF(MOD(B3,2)=0,B8-2,B8-1),IF(MOD(B3,2)=0,B8-2,B8-1))"}, "C13": {"v": "30306L2S50900R018", "f": null}, "D13": {"v": "2代落地架_可伸缩拉杆_1米长 铝合金 黑色喷粉   ROHS", "f": null}, "E13": {"v": "高度≤4米时：列数若为偶数，则数量=B8-2，列数为奇数，则数量=B8-1。高度之和大于4米时，在前面计算的基础上*2", "f": null}, "F13": {"v": "≈2.82KG", "f": null}, "G13": {"v": "", "f": null}, "H13": {"v": "", "f": null}, "I13": {"v": "", "f": null}, "A14": {"v": "维修踏板_1米\nPlatform", "f": null}, "B14": {"v": "2", "f": "ROUNDUP(B3*0.5/3,0)"}, "C14": {"v": "30306L2S50900R017", "f": null}, "D14": {"v": "2代落地架_维修踏板_1米 铝合金板 黑色喷粉   ROHS", "f": null}, "E14": {"v": "宽度每3米一个，向上取整（建议值）（踏板数量根据需求可以自己配）", "f": null}, "F14": {"v": "≈4.18KG", "f": null}, "G14": {"v": "", "f": null}, "H14": {"v": "", "f": null}, "I14": {"v": "", "f": null}, "A15": {"v": "", "f": null}, "B15": {"v": "", "f": null}, "C15": {"v": "", "f": null}, "D15": {"v": "", "f": null}, "E15": {"v": "", "f": null}, "F15": {"v": "", "f": null}, "G15": {"v": "", "f": null}, "H15": {"v": "", "f": null}, "I15": {"v": "", "f": null}, "A16": {"v": "方式1：旧款航空箱Flight Cases：(如不配航空箱，标准用木箱打包)", "f": null}, "B16": {"v": "", "f": null}, "C16": {"v": "", "f": null}, "D16": {"v": "", "f": null}, "E16": {"v": "", "f": null}, "F16": {"v": "", "f": null}, "G16": {"v": "", "f": null}, "H16": {"v": "", "f": null}, "I16": {"v": "", "f": null}, "A17": {"v": "航空箱名称\nComponents", "f": null}, "B17": {"v": "数量\nQuantity", "f": null}, "C17": {"v": "SAP料号\nSAP NO.", "f": null}, "D17": {"v": "物料描述\nMaterial Description", "f": null}, "E17": {"v": "配置\nConfiguration", "f": null}, "F17": {"v": "单个部件重量\nWeight", "f": null}, "G17": {"v": "", "f": null}, "H17": {"v": "", "f": null}, "I17": {"v": "", "f": null}, "A18": {"v": "2代落地架航空箱1 \n装1米梯形支架--6个/箱", "f": null}, "B18": {"v": "4", "f": "ROUNDUP(B9/6,0)"}, "C18": {"v": "30603M2S90000R049", "f": null}, "D18": {"v": "2代落地架航空箱1 1130*560*500 黑色 无LOGO  ROHS", "f": null}, "E18": {"v": "Ladder x1000mm  -- 6IN1 ", "f": null}, "F18": {"v": "49.5KG", "f": null}, "G18": {"v": "", "f": null}, "H18": {"v": "", "f": null}, "I18": {"v": "", "f": null}, "A19": {"v": "2代落地架航空箱2 \n装梯形架底座--8个/箱", "f": null}, "B19": {"v": "1", "f": "ROUNDUP(B8/8,0)"}, "C19": {"v": "30603M2S90000R048", "f": null}, "D19": {"v": "2代落地架航空箱2 1130*870*500 黑色 无LOGO  ROHS", "f": null}, "E19": {"v": "Outrigger -- 8IN1", "f": null}, "F19": {"v": "47.2KG", "f": null}, "G19": {"v": "", "f": null}, "H19": {"v": "", "f": null}, "I19": {"v": "", "f": null}, "A20": {"v": "2代落地架航空箱3 \n装单倍底座--16个/箱", "f": null}, "B20": {"v": "1", "f": "ROUNDUP(B7/16,0)"}, "C20": {"v": "30603M2S90000R047", "f": null}, "D20": {"v": "2代落地架航空箱3 1230*600*460 黑色 无LOGO  ROHS", "f": null}, "E20": {"v": "Single Base Stand  1x1 --16IN1", "f": null}, "F20": {"v": "42.2KG", "f": null}, "G20": {"v": "", "f": null}, "H20": {"v": "", "f": null}, "I20": {"v": "", "f": null}, "A21": {"v": "2代落地架航空箱5 \n箱体抓手--24个/箱\n踏板--6个/箱", "f": null}, "B21": {"v": "2", "f": "MAX(ROUNDUP(B14/6,0),ROUNDUP(B11/24,0))"}, "C21": {"v": "30603M2S90000R045", "f": null}, "D21": {"v": "2代落地架航空箱5 1130*580*500 黑色 无LOGO  ROHS", "f": null}, "E21": {"v": "Platform: 6IN1\nClamp: 24IN1", "f": null}, "F21": {"v": "45.2KG", "f": null}, "G21": {"v": "", "f": null}, "H21": {"v": "", "f": null}, "I21": {"v": "", "f": null}, "A22": {"v": "PL落地架航空箱8 \n梯形支架_0.5米--6个/箱\n1米固定杆--6个/箱\n0.5米固定杆--6个/箱", "f": null}, "B22": {"v": "2", "f": "MAX(ROUNDUP(B12/6,0),ROUNDUP(B13/6,0),ROUNDUP(B10/6,0))"}, "C22": {"v": "30603L2S50000R055", "f": null}, "D22": {"v": "2代落地架航空箱8 1250*580*650 黑色 无LOGO ROHS", "f": null}, "E22": {"v": "Beam connector x1000mm--6IN1\nBeam connector x500mm--6IN1\nLadder x0.5m --6IN1", "f": null}, "F22": {"v": "46.1KG", "f": null}, "G22": {"v": "", "f": null}, "H22": {"v": "", "f": null}, "I22": {"v": "", "f": null}, "A23": {"v": "", "f": null}, "B23": {"v": "", "f": null}, "C23": {"v": "", "f": null}, "D23": {"v": "", "f": null}, "E23": {"v": "", "f": null}, "F23": {"v": "", "f": null}, "G23": {"v": "", "f": null}, "H23": {"v": "", "f": null}, "I23": {"v": "", "f": null}, "A24": {"v": "方式2：新款航空箱Flight Cases：(如不配航空箱，标准用木箱打包)", "f": null}, "B24": {"v": "", "f": null}, "C24": {"v": "", "f": null}, "D24": {"v": "", "f": null}, "E24": {"v": "", "f": null}, "F24": {"v": "", "f": null}, "G24": {"v": "", "f": null}, "H24": {"v": "", "f": null}, "I24": {"v": "", "f": null}, "A25": {"v": "航空箱名称\nComponents", "f": null}, "B25": {"v": "航空箱总数\nQuantity", "f": null}, "C25": {"v": "SAP NO.", "f": null}, "D25": {"v": "珍珠棉物料描述\nMaterial Description", "f": null}, "E25": {"v": "配棉", "f": null}, "F25": {"v": "装箱数量", "f": null}, "G25": {"v": "配棉数量", "f": null}, "H25": {"v": "组件数量", "f": null}, "I25": {"v": "航空箱数量", "f": null}, "A26": {"v": "30603L2S9R0000763 \n备件航空箱 木质 1192x678x780 无logo", "f": null}, "B26": {"v": "9", "f": "SUM(I26:I32)"}, "C26": {"v": "30609L2S9R0000654", "f": null}, "D26": {"v": "环保珍珠棉 600x150x185 活动棉2-配单倍吊梁", "f": null}, "E26": {"v": "1PC配件配1", "f": null}, "F26": {"v": "1装21", "f": null}, "G26": {"v": "12", "f": "B7"}, "H26": {"v": "12", "f": "B7"}, "I26": {"v": "1", "f": "CEILING(B7/21,1)"}, "A27": {"v": "", "f": null}, "B27": {"v": "", "f": null}, "C27": {"v": "30609L2S9R0000659", "f": null}, "D27": {"v": "环保珍珠棉 845x455x177 活动棉7-配梯形架底座", "f": null}, "E27": {"v": "", "f": null}, "F27": {"v": "1装4", "f": null}, "G27": {"v": "7", "f": null}, "H27": {"v": "7", "f": null}, "I27": {"v": "2", "f": "CEILING(B8/4,1)"}, "A28": {"v": "", "f": null}, "B28": {"v": "", "f": null}, "C28": {"v": "30609L2S9R0000663", "f": null}, "D28": {"v": "环保珍珠棉 420x94 活动棉6-2块-配梯形架", "f": null}, "E28": {"v": "", "f": null}, "F28": {"v": "1装8", "f": null}, "G28": {"v": "21", "f": null}, "H28": {"v": "21", "f": null}, "I28": {"v": "3", "f": "CEILING(B9/8,1)"}, "A29": {"v": "", "f": null}, "B29": {"v": "", "f": null}, "C29": {"v": "", "f": null}, "D29": {"v": "", "f": null}, "E29": {"v": "", "f": null}, "F29": {"v": "1装18", "f": null}, "G29": {"v": "7", "f": null}, "H29": {"v": "7", "f": null}, "I29": {"v": "1", "f": "CEILING((B10-IF(MOD(B9,8)=0,0,(8-MOD(B9,8))*2))/18,1)"}, "A30": {"v": "", "f": null}, "B30": {"v": "", "f": null}, "C30": {"v": "30609L2S9R0000657", "f": null}, "D30": {"v": "环保珍珠棉 140x140x485 活动棉9-配 落地架抓手", "f": null}, "E30": {"v": "", "f": null}, "F30": {"v": "1装32", "f": null}, "G30": {"v": "28", "f": null}, "H30": {"v": "28", "f": null}, "I30": {"v": "1", "f": "CEILING(B11/32,1)"}, "A31": {"v": "", "f": null}, "B31": {"v": "", "f": null}, "C31": {"v": "30609L2S9R0000658", "f": null}, "D31": {"v": "环保珍珠棉 666x144x110 活动棉8-配0.5m伸缩拉杆", "f": null}, "E31": {"v": "", "f": null}, "F31": {"v": "1装28", "f": null}, "G31": {"v": "1", "f": null}, "H31": {"v": "1", "f": null}, "I31": {"v": "0", "f": "IF(B12-I33*8<=0,0,CEILING((B12-I33*8)/28,1))"}, "A32": {"v": "", "f": null}, "B32": {"v": "", "f": null}, "C32": {"v": "30609L2S9R0000656", "f": null}, "D32": {"v": "环保珍珠棉 1005x188 活动棉11-配1m伸缩拉杆", "f": null}, "E32": {"v": "", "f": null}, "F32": {"v": "1装16", "f": null}, "G32": {"v": "5", "f": null}, "H32": {"v": "5", "f": null}, "I32": {"v": "1", "f": "CEILING(B13/16,1)"}, "A33": {"v": "30603L2S9R0000966\n备件航空箱 木质 1384x678x780 无logo 装1M维修踏板  14IN1", "f": null}, "B33": {"v": "1", "f": "I33"}, "C33": {"v": "30609L2S9R0000655", "f": null}, "D33": {"v": "环保珍珠棉 1005x114 活动棉10-配1M维修踏板", "f": null}, "E33": {"v": "", "f": null}, "F33": {"v": "1装14", "f": null}, "G33": {"v": "4", "f": "2*B14"}, "H33": {"v": "2", "f": null}, "I33": {"v": "1", "f": "CEILING(B14/14,1)"}, "A34": {"v": "PS：单箱装不满的配件，需填充棉(下单需备注)", "f": null}, "B34": {"v": "", "f": null}, "C34": {"v": "", "f": null}, "D34": {"v": "", "f": null}, "E34": {"v": "", "f": null}, "F34": {"v": "", "f": null}, "G34": {"v": "", "f": null}, "H34": {"v": "", "f": null}, "I34": {"v": "", "f": null}}};
+const INPUT_MAP = {"PL V3": ["B3", "C3", "D3"]};
+const MERGE_MAP = {"PL V3": ["A1:F1", "E2:F2", "E3:F3", "A4:C4", "A5:F5", "A16:F16", "A24:F24", "A34:I34", "A26:A32", "B26:B32", "C28:C29", "D28:D29", "E26:E33"]};
+
+let currentSheet = 'PL V3';
+
+function numToCol(n){
+  let s='';
+  while(n>0){
+    let r=(n-1)%26;
+    n=Math.floor((n-1)/26);
+    s=String.fromCharCode(65+r)+s;
+  }
+  return s;
+}
+
+function buildSheetMergeMap(sheetName){
+  const ranges = MERGE_MAP[sheetName] || [];
+  const m = {};
+  for(const rng of ranges){
+    const [start,end] = rng.split(':');
+    const startCol = start.match(/[A-Z]+/)[0];
+    const startRow = parseInt(start.match(/\d+/)[0]);
+    const endCol = end.match(/[A-Z]+/)[0];
+    const endRow = parseInt(end.match(/\d+/)[0]);
+    const colToNum = (c)=>{let n=0;for(const ch of c)n=n*26+(ch.charCodeAt(0)-64);return n;};
+    const startCi = colToNum(startCol);
+    const endCi = colToNum(endCol);
+    const colspan = endCi - startCi + 1;
+    const rowspan = endRow - startRow + 1;
+    for(let r=startRow;r<=endRow;r++){
+      for(let ci=startCi;ci<=endCi;ci++){
+        const key = r+'_'+ci;
+        if(r===startRow && ci===startCi){
+          m[key] = {merged:false,colspan,rowspan};
+        } else {
+          m[key] = {merged:true};
+        }
+      }
+    }
+  }
+  return m;
+}
+
+function disp(c){
+  if(!c) return '';
+  let v = c.v || '';
+  return String(v);
+}
+
+
+// ========== 公式自动计算 ==========
+function evalExcelFormula(formula, values){
+  if(!formula) return '';
+  let expr = formula.trim();
+  
+  // 替换单元格引用为值
+  const refs = [];
+  expr = expr.replace(/([A-Z]+)(\d+)/g, function(match, col, row){
+    const ref = col + row;
+    refs.push(ref);
+    return '___REF_' + refs.length + '___';
+  });
+  
+  for(let i=0; i<refs.length; i++){
+    const ref = refs[i];
+    let val = 0;
+    if(values[ref] !== undefined && values[ref] !== '' && !isNaN(parseFloat(values[ref]))){
+      val = parseFloat(values[ref]);
+    }
+    expr = expr.replace('___REF_' + (i+1) + '___', val);
+  }
+  
+  // 替换Excel函数
+  expr = expr.replace(/ROUNDDOWN\(/g, 'Math.floor(');
+  expr = expr.replace(/ROUNDUP\(/g, 'Math.ceil(');
+  expr = expr.replace(/ROUND\(/g, 'Math.round(');
+  expr = expr.replace(/CEILING\(/g, 'Math.ceil(');
+  expr = expr.replace(/MAX\(/g, 'Math.max(');
+  expr = expr.replace(/<>/g, '!=');
+  
+  // 替换Excel的=比较为JavaScript的==（但不替换<=, >=, !=）
+  expr = expr.replace(/([^<>!=])=([^=])/g, '$1==$2');
+  expr = expr.replace(/^=([^=])/, '==$1');
+  
+  // 处理MOD函数
+  while(expr.includes('MOD(')){
+    const idx = expr.indexOf('MOD(');
+    let depth = 1;
+    let start = idx + 4;
+    let commaIdx = -1;
+    let endIdx = -1;
+    for(let i=start; i<expr.length; i++){
+      if(expr[i] === '(') depth++;
+      if(expr[i] === ')'){
+        depth--;
+        if(depth === 0){ endIdx = i; break; }
+      }
+      if(expr[i] === ',' && depth === 1 && commaIdx === -1) commaIdx = i;
+    }
+    if(commaIdx > 0 && endIdx > 0){
+      const a = expr.substring(start, commaIdx);
+      const b = expr.substring(commaIdx+1, endIdx);
+      expr = expr.substring(0, idx) + '((' + a + ')%(' + b + '))' + expr.substring(endIdx+1);
+    } else break;
+  }
+  
+  // 处理OR函数
+  while(expr.includes('OR(')){
+    const idx = expr.indexOf('OR(');
+    let depth = 1;
+    let start = idx + 3;
+    let endIdx = -1;
+    for(let i=start; i<expr.length; i++){
+      if(expr[i] === '(') depth++;
+      if(expr[i] === ')'){
+        depth--;
+        if(depth === 0){ endIdx = i; break; }
+      }
+    }
+    if(endIdx > 0){
+      const args = expr.substring(start, endIdx);
+      expr = expr.substring(0, idx) + '((' + args.replace(/,/g, ')||(') + '))' + expr.substring(endIdx+1);
+    } else break;
+  }
+  
+  // 处理IF函数
+  let maxIter = 20;
+  while(expr.includes('IF(') && maxIter-- > 0){
+    const idx = expr.indexOf('IF(');
+    let depth = 1;
+    let start = idx + 3;
+    let comma1 = -1;
+    let comma2 = -1;
+    let endIdx = -1;
+    for(let i=start; i<expr.length; i++){
+      if(expr[i] === '(') depth++;
+      if(expr[i] === ')'){
+        depth--;
+        if(depth === 0){ endIdx = i; break; }
+      }
+      if(expr[i] === ',' && depth === 1){
+        if(comma1 === -1) comma1 = i;
+        else if(comma2 === -1) comma2 = i;
+      }
+    }
+    if(comma1 > 0 && comma2 > 0 && endIdx > 0){
+      const cond = expr.substring(start, comma1);
+      const trueVal = expr.substring(comma1+1, comma2);
+      const falseVal = expr.substring(comma2+1, endIdx);
+      expr = expr.substring(0, idx) + '((' + cond + ')?(' + trueVal + '):(' + falseVal + '))' + expr.substring(endIdx+1);
+    } else break;
+  }
+  
+  // 处理SUM函数
+  while(expr.includes('SUM(')){
+    const idx = expr.indexOf('SUM(');
+    let depth = 1;
+    let start = idx + 4;
+    let endIdx = -1;
+    for(let i=start; i<expr.length; i++){
+      if(expr[i] === '(') depth++;
+      if(expr[i] === ')'){
+        depth--;
+        if(depth === 0){ endIdx = i; break; }
+      }
+    }
+    if(endIdx > 0){
+      expr = expr.substring(0, idx) + '0' + expr.substring(endIdx+1);
+    } else break;
+  }
+  
+  try {
+    const result = eval(expr);
+    if(typeof result === 'number' && !isNaN(result) && isFinite(result)){
+      return Math.round(result * 1000) / 1000;
+    }
+    return result;
+  } catch(e) {
+    console.error('公式计算错误:', formula, expr, e.message);
+    return '';
+  }
+}
+
+function recalculateFormulas(){
+  const sheetData = ALL_DATA[currentSheet];
+  if(!sheetData) return;
+  
+  const values = {};
+  
+  for(const ref in sheetData){
+    const cell = sheetData[ref];
+    if(cell && !cell.f && cell.v !== '' && !isNaN(parseFloat(cell.v))){
+      values[ref] = parseFloat(cell.v);
+    }
+  }
+  
+  document.querySelectorAll('input[data-ref]').forEach(input => {
+    const ref = input.getAttribute('data-ref');
+    if(input.value !== '' && !isNaN(parseFloat(input.value))){
+      values[ref] = parseFloat(input.value);
+    }
+  });
+  
+  for(let iter=0; iter<15; iter++){
+    let changed = false;
+    for(const ref in sheetData){
+      const cell = sheetData[ref];
+      if(cell && cell.f){
+        const result = evalExcelFormula(cell.f, values);
+        if(result !== '' && result !== values[ref]){
+          values[ref] = result;
+          changed = true;
+        }
+      }
+    }
+    if(!changed) break;
+  }
+  
+  document.querySelectorAll('td[data-formula-ref]').forEach(td => {
+    const ref = td.getAttribute('data-formula-ref');
+    if(values[ref] !== undefined){
+      td.textContent = values[ref];
+    }
+  });
+}
+
+function renderTable(){
+  const sheetData = ALL_DATA[currentSheet] || {};
+  const inputs = INPUT_MAP[currentSheet] || [];
+  const sheetMergeMap = buildSheetMergeMap(currentSheet);
+  
+  // 计算最大行和最大列
+  let maxRow = 0;
+  let maxCol = 9;
+  for(const ref in sheetData){
+    const m = ref.match(/([A-Z]+)(\d+)/);
+    if(m){
+      const row = parseInt(m[2]);
+      if(row > maxRow) maxRow = row;
+    }
+  }
+  // 合并单元格扩展maxCol
+  for(const rng of (MERGE_MAP[currentSheet]||[])){
+    const end = rng.split(':')[1];
+    const endCol = end.match(/[A-Z]+/)[0];
+    const colToNum = (c)=>{let n=0;for(const ch of c)n=n*26+(ch.charCodeAt(0)-64);return n;};
+    if(colToNum(endCol) > maxCol) maxCol = colToNum(endCol);
+  }
+  
+  const container = document.getElementById('tableContainer');
+  let html = '';
+  let inSection = false;
+  
+  for(let rNum=1; rNum<=maxRow; rNum++){
+    const rowCells = {};
+    for(let ci=1; ci<=maxCol; ci++){
+      const col = numToCol(ci);
+      const ref = col + rNum;
+      rowCells[ref] = sheetData[ref];
+    }
+    
+    const aVal = disp(rowCells['A'+rNum]);
+    const bVal = disp(rowCells['B'+rNum]);
+    const cVal = disp(rowCells['C'+rNum]);
+    
+    // 判断行类型
+    const isNote = aVal && /PS：|注：|备注|仅供参考|请勿|暂未|注意/.test(aVal);
+    const isSection = aVal && /[（(].*[)）]：?$/.test(aVal) && !/最大支持|排列方式|计算公式/.test(aVal) && aVal.length < 60;
+    const isInputHeader = (/Width|Height|Quantity|宽度|高度|数量/.test(bVal+cVal) && !inputs.includes('B'+rNum));
+    const isInputRow = aVal && /排列方式|Input screen/.test(aVal);
+    
+    // 第1行：标题栏
+    if(rNum === 1){
+      if(inSection){html += '</tbody></table></div></div>'; inSection=false;}
+      html += '<div class="note-bar">'+aVal+'</div>';
+      continue;
+    }
+    
+    // section标题行
+    if(isSection){
+      if(inSection) html += '</tbody></table></div></div>';
+      html += '<div class="table-section"><div class="table-section-title">'+aVal+'</div><div class="table-wrapper"><table class="data-table"><tbody>';
+      inSection = true;
+      continue;
+    }
+    
+    // 确保在表格中
+    if(!inSection){
+      const hasContent = Object.values(rowCells).some(c=>disp(c)!=='');
+      if(!hasContent) continue;
+      html += '<div class="table-section"><div class="table-wrapper"><table class="data-table"><tbody>';
+      inSection = true;
+    }
+    
+    const rowHasContent = Object.values(rowCells).some(c=>disp(c)!=='');
+    if(!rowHasContent) continue;
+    
+    let rowClass = isNote ? 'note-row' : (isSection ? 'section-header' : (isInputHeader ? 'input-header' : (isInputRow ? 'input-row' : '')));
+    html += '<tr class="'+rowClass+'">';
+    
+    const rowHasInput = inputs.includes('B'+rNum);
+    
+    for(let ci=1; ci<=maxCol; ci++){
+      const col = numToCol(ci);
+      const ref = col + rNum;
+      const c = rowCells[ref];
+      const val = disp(c);
+      let tdClass = '';
+      const mergeInfo = sheetMergeMap[rNum+'_'+ci];
+      
+      if(mergeInfo && mergeInfo.merged) continue;
+      
+      let mergeAttr = '';
+      if(mergeInfo){
+        if(mergeInfo.rowspan > 1){mergeAttr += ' rowspan="'+mergeInfo.rowspan+'"'; tdClass += ' row-merge';}
+        if(mergeInfo.colspan > 1){mergeAttr += ' colspan="'+mergeInfo.colspan+'"'; tdClass += ' col-merge';}
+      }
+      
+      // 公式单元格添加标记
+      if(c && c.f){
+        tdClass += ' formula-cell';
+        html += '<td class="'+tdClass+'"'+mergeAttr+' data-formula-ref="'+ref+'">'+val+'</td>';
+        continue;
+      }
+      
+      // 特殊class
+      if(col === 'B' && val !== '' && !isNaN(parseFloat(val))) tdClass += ' cell-qty';
+      if(/重量|Weight|KG/.test(val)) tdClass += ' cell-weight';
+      if(/请在左侧输入/.test(val)) tdClass += ' hint-cell';
+      
+      // 数字单元格居中（纯数字，且不是表头行）
+      if(!isInputHeader && !isSection && !isNote && val !== '' && !isNaN(parseFloat(val)) && /^\d+\.?\d*$/.test(val.trim())){
+        tdClass += ' num-cell';
+      }
+      // 物料描述列居左（长文本）
+      if(!isInputHeader && !isSection && !isNote && val.length > 20 && !/^\d/.test(val)){
+        tdClass += ' desc-cell';
+      }
+      
+      // 输入框
+      if(inputs.includes(ref)){
+        html += '<td class="'+tdClass+'"'+mergeAttr+'><input type="number" min="0" value="'+val+'" data-ref="'+ref+'" onchange="recalculateFormulas()"></td>';
+        continue;
+      }
+      
+      // 普通单元格 - 换行处理
+      let dispVal = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+      html += '<td class="'+tdClass+'"'+mergeAttr+'>'+dispVal+'</td>';
+    }
+    html += '</tr>';
+  }
+  
+  if(inSection) html += '</tbody></table></div></div>';
+  
+  container.innerHTML = html;
+}
+
+function exportExcel(){
+  // 简单的CSV导出
+  const sheetData = ALL_DATA[currentSheet] || {};
+  const inputs = INPUT_MAP[currentSheet] || [];
+  
+  let maxRow = 0;
+  let maxCol = 9;
+  for(const ref in sheetData){
+    const m = ref.match(/([A-Z]+)(\d+)/);
+    if(m){
+      const row = parseInt(m[2]);
+      if(row > maxRow) maxRow = row;
+    }
+  }
+  
+  let csv = '\uFEFF';
+  for(let r=1; r<=maxRow; r++){
+    const row = [];
+    for(let ci=1; ci<=maxCol; ci++){
+      const col = numToCol(ci);
+      const ref = col + r;
+      const c = sheetData[ref];
+      let v = c ? (c.v || '') : '';
+      v = String(v).replace(/\n/g, ' ').replace(/"/g, '""');
+      row.push('"'+v+'"');
+    }
+    csv += row.join(',') + '\n';
+  }
+  
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = currentSheet + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// 初始化
+document.getElementById('sheetSelect').addEventListener('change', function(){
+  currentSheet = this.value;
+  renderTable();
+  updateAttachmentDisplay();
+});
+
+renderTable();
+
+// 更新履历数据
+const UPDATE_LOG = {"A1": {"v": "日  期"}, "B1": {"v": "修   订   内   容"}, "C1": {"v": "编辑人"}, "A2": {"v": "45709"}, "B2": {"v": "输出首版落地支架速算表（国际SR使用）V1.0"}, "C2": {"v": "杜辉"}, "A3": {"v": "45723"}, "B3": {"v": "计算公式新增对长箱体的支持，表格版本V1.1-20250307"}, "C3": {"v": "杜辉"}, "A4": {"v": "45728"}, "B4": {"v": "修改AX落地支架部分错误，表格版本V1.2-20250312"}, "C4": {"v": "杜辉"}, "A5": {"v": "45731"}, "B5": {"v": "更新FL落地支架部分物料，表格版本V1.3-20250315"}, "C5": {"v": "杜辉"}, "A6": {"v": "45743"}, "B6": {"v": "新增CPS系列壁挂架计算工具、钢结构计算工具（数据来源产品线）"}, "C6": {"v": "杜辉"}, "B7": {"v": "表格命名修改为：结构配件速算表V1.4-20250327"}, "C7": {"v": "杜辉"}, "A8": {"v": "45796"}, "B8": {"v": "新增XL系列背条计算公式"}, "C8": {"v": "杜辉"}, "B9": {"v": "新增NX系列新背条计算公式，表格版本V1.5-20250519"}, "C9": {"v": "杜辉"}, "A10": {"v": "45797"}, "B10": {"v": "新增PL NT 系列落地支架安装示意图（供参考）"}, "C10": {"v": "杜辉"}, "B11": {"v": "新增XL NX 系列壁挂架安装示意图（供参考）"}, "C11": {"v": "杜辉"}, "A12": {"v": "45813"}, "B12": {"v": "新增KLCOB V2系列背条计算公式"}, "C12": {"v": "杜辉"}, "A13": {"v": "45825"}, "B13": {"v": "新增SA落地支架计算公式"}, "C13": {"v": "杜辉"}, "A14": {"v": "45827"}, "B14": {"v": "修正了SA落地支架计算公式"}, "C14": {"v": "杜辉"}, "A15": {"v": "45842"}, "B15": {"v": "修正AX落地支架公式错误"}, "C15": {"v": "杜辉"}, "A16": {"v": "45856"}, "B16": {"v": "更新KLCOB V2背条（2IN1）物料"}, "C16": {"v": "杜辉"}, "A17": {"v": "45861"}, "B17": {"v": "新增FL V2落地支架计算公式-还未正式发布"}, "C17": {"v": "杜辉"}, "B18": {"v": "新增K V3背条计算公式"}, "C18": {"v": "杜辉"}, "A19": {"v": "45869"}, "B19": {"v": "更新XL和KLCOB V2和NX 角码和墙壁固定螺丝"}, "C19": {"v": "杜辉"}, "A20": {"v": "45875"}, "B20": {"v": "完善FL V2落地支架计算公式"}, "C20": {"v": "杜辉"}, "B21": {"v": "新增NT V2落地支架计算公式-还未正式发布"}, "C21": {"v": "杜辉"}, "A22": {"v": "45876"}, "B22": {"v": "新做NT V2落地支架对应航空箱物料和计算公式-林泽锋提供"}, "C22": {"v": "杜辉"}, "A23": {"v": "45877"}, "B23": {"v": "新增K V3-2025A包边计算公式"}, "C23": {"v": "杜辉"}, "B24": {"v": "新增KLCOB V2包边计算公式"}, "C24": {"v": "杜辉"}, "B25": {"v": "新增XL包边计算公式"}, "C25": {"v": "杜辉"}, "A26": {"v": "45894"}, "B26": {"v": "修正K V3包边物料"}, "C26": {"v": "杜辉"}, "A27": {"v": "45901"}, "B27": {"v": "新增NX包边计算公式"}, "C27": {"v": "杜辉"}, "A28": {"v": "45909"}, "B28": {"v": "修改K V3-2025A版本为K V3-V3X版本"}, "C28": {"v": "杜辉"}, "A29": {"v": "45912"}, "B29": {"v": "增加PR落地支架航空箱物料--可以通用PL落地支架旧款航空箱"}, "C29": {"v": "杜辉"}, "B30": {"v": "修正PR落地支架一处错误，删除0.5米梯形支架物料，只需要用到0.4米梯形架"}, "C30": {"v": "杜辉"}, "A31": {"v": "45939"}, "B31": {"v": "修正KLCOB V2包边组件部分错误"}, "C31": {"v": "杜辉"}, "A32": {"v": "45945"}, "B32": {"v": "更新SA系列底座物料"}, "C32": {"v": "杜辉"}, "A33": {"v": "45973"}, "B33": {"v": "增加K V3背条安装工具物料"}, "C33": {"v": "杜辉"}, "A34": {"v": "45974"}, "B34": {"v": "修正K V3背条安装示意图挂钩位置"}, "C34": {"v": "杜辉"}, "A35": {"v": "45981"}, "B35": {"v": "新增PL V3系列落地支架计算公式"}, "C35": {"v": "杜辉"}, "A36": {"v": "45989"}, "B36": {"v": "将表格中的部件重量信息补充完整"}, "C36": {"v": "杜辉"}, "A37": {"v": "45993"}, "B37": {"v": "更新NT V2新款落地支架底座料号（兼容NT V2底座料号）"}, "C37": {"v": "杜辉"}, "A38": {"v": "46014"}, "B38": {"v": "修正SA落地支架小错误"}, "C38": {"v": "杜辉"}, "A39": {"v": "46026"}, "B39": {"v": "补充说明NX包边配合单双倍挂架或者新背条均可"}, "C39": {"v": "杜辉"}, "A40": {"v": "46027"}, "B40": {"v": "更新SA长短箱体底座物料"}, "C40": {"v": "杜辉"}, "A41": {"v": "46029"}, "B41": {"v": "新增K plus背条计算公式"}, "C41": {"v": "杜辉"}, "A42": {"v": "46052"}, "B42": {"v": "FL V2落地支架暂停使用，底座和支撑座待确认"}, "C42": {"v": "杜辉"}, "A43": {"v": "46113"}, "B43": {"v": "更新FL V2地梁和落地架底座物料"}, "C43": {"v": "杜辉"}, "A44": {"v": "46129"}, "B44": {"v": "补充PDF格式安装示意图（供参考）"}, "C44": {"v": "杜辉"}, "B45": {"v": "新增NT V2系列落地支架安装示意图（新款落地支架）（供参考）"}, "C45": {"v": "杜辉"}, "A46": {"v": "46140"}, "B46": {"v": "新增ALT系列挂架+包边计算公式"}, "C46": {"v": "杜辉"}, "A47": {"v": "46157"}, "B47": {"v": "更新NX系列背条安装示意图（供参考）"}, "C47": {"v": "杜辉"}, "B48": {"v": "更新KLCOB V2系列背条安装示意图，加入二合一和三合一小箱体"}, "C48": {"v": "杜辉"}, "A49": {"v": "46164"}, "B49": {"v": "增加CL V3包边物料（注意：CL V3包边方案下单前，需要和产品线进行沟通确认）"}, "C49": {"v": "杜辉"}, "A50": {"v": "46170"}, "B50": {"v": "修正CL V3包边计算公式部分错误"}, "C50": {"v": "杜辉"}, "A51": {"v": "46176"}, "B51": {"v": "新增KLCOB V2挂架+包边计算公式"}, "C51": {"v": "杜辉"}, "B52": {"v": "新增CL V3挂架+包边计算公式"}, "C52": {"v": "杜辉"}, "A53": {"v": "46177"}, "B53": {"v": "调整NT V2系列新款落地支架-梯形架对应航空箱数量计算公式"}, "C53": {"v": "杜辉"}, "B54": {"v": "新增NT旧款落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C54": {"v": "杜辉"}, "B55": {"v": "新增PL旧款落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C55": {"v": "杜辉"}, "B56": {"v": "新增PL V3落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C56": {"v": "杜辉"}, "B57": {"v": "新增PR落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C57": {"v": "杜辉"}, "B58": {"v": "新增SA落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C58": {"v": "杜辉"}, "A59": {"v": "46189"}, "B59": {"v": "新增AW V2挂架计算公式"}, "C59": {"v": "杜辉"}, "A60": {"v": "46213"}, "B60": {"v": "新增M54挂架+包边计算公式"}, "C60": {"v": "杜辉"}, "A61": {"v": "46214"}, "B61": {"v": "新增KLCOB V3背条+包边计算公式"}, "C61": {"v": "杜辉"}, "A62": {"v": "46227"}, "B62": {"v": "补充AW V2-500*750挂架计算公式"}, "C62": {"v": "杜辉"}, "A63": {"v": "46231"}, "B63": {"v": "新增KLCOB背条+包边计算公式"}, "C63": {"v": "杜辉"}, "B64": {"v": "新增KLCOB挂架+包边计算公式"}, "C64": {"v": "杜辉"}, "B65": {"v": "新增KLCOB V3挂架+包边计算公式"}, "C65": {"v": "杜辉"}, "A66": {"v": "46233"}, "B66": {"v": "补充KLCOB V3挂架和背条安装示意图（供参考）"}, "C66": {"v": "杜辉"}, "B67": {"v": "更新AW V2安装示意图，增加500*750尺寸挂架（供参考）"}, "C67": {"v": "杜辉"}, "B68": {"v": "增加AW V2 500*750尺寸挂架重量，修正AW V2挂钉重量错误"}, "C68": {"v": "杜辉"}, "A69": {"v": "46234"}, "B69": {"v": "补充KLCOB C04版本挂架和背条安装示意图（供参考）"}, "C69": {"v": "杜辉"}, "A70": {"v": "46248"}, "B70": {"v": "KLCOB V3和CL V3包边增加注释：标准是按包背条设计的，壁挂架厚度要厚一些，包不全;如果需要全包需要走非标定制包边;"}, "C70": {"v": "杜辉"}, "A71": {"v": "46249"}, "B71": {"v": "更新KLCOB V2安装示意图(侧视图标注尺寸更新)"}, "C71": {"v": "杜辉"}, "B72": {"v": "更新KLCOB C04安装示意图(侧视图标注尺寸更新)"}, "C72": {"v": "杜辉"}, "A73": {"v": "46252"}, "B73": {"v": "K V3背条示意图更新（原箱体图纸背部孔位有微调，其他不变）"}, "C73": {"v": "杜辉"}};
+
+// Excel日期序列号转日期
+function excelDateToDate(serial){
+  if(!serial || isNaN(parseFloat(serial))) return serial;
+  const utcDays = Math.floor(serial - 25569);
+  const utcValue = utcDays * 86400;
+  const dateInfo = new Date(utcValue * 1000);
+  const year = dateInfo.getFullYear();
+  const month = String(dateInfo.getMonth() + 1).padStart(2, '0');
+  const day = String(dateInfo.getDate()).padStart(2, '0');
+  return year + '-' + month + '-' + day;
+}
+
+// 打开更新履历
+function openUpdateLog(){
+  const content = document.getElementById('updateLogContent');
+  let html = '<table class="update-log-table"><thead><tr><th style="width:100px">日期</th><th>修订内容</th><th style="width:80px">编辑人</th></tr></thead><tbody>';
+  
+  // 按行排序
+  const rows = {};
+  for(const ref in UPDATE_LOG){
+    const m = ref.match(/([A-Z]+)(\d+)/);
+    if(m){
+      const row = parseInt(m[2]);
+      const col = m[1];
+      if(!rows[row]) rows[row] = {};
+      rows[row][col] = UPDATE_LOG[ref].v;
+    }
+  }
+  
+  const sortedRows = Object.keys(rows).sort((a,b)=>parseInt(a)-parseInt(b));
+  for(const rowNum of sortedRows){
+    const row = rows[rowNum];
+    if(rowNum == 1) continue; // 跳过表头
+    const date = row.A ? excelDateToDate(row.A) : '';
+    const content_text = row.B || '';
+    const editor = row.C || '';
+    html += '<tr><td>' + date + '</td><td>' + content_text + '</td><td>' + editor + '</td></tr>';
+  }
+  
+  html += '</tbody></table>';
+  content.innerHTML = html;
+  document.getElementById('updateLogModal').classList.add('active');
+}
+
+// 打开后台维护
+function openAdmin(){
+  document.getElementById('adminLoginModal').classList.add('active');
+  document.getElementById('adminPassword').value = '';
+  document.getElementById('loginError').style.display = 'none';
+  setTimeout(()=>document.getElementById('adminPassword').focus(), 100);
+}
+
+// 登录验证
+function loginAdmin(){
+  const pwd = document.getElementById('adminPassword').value;
+  if(pwd === '123321'){
+    document.getElementById('adminLoginModal').classList.remove('active');
+    document.getElementById('adminModal').classList.add('active');
+    // 登录成功后初始化附件列表
+    setTimeout(function(){
+      try {
+        pendingAttachments = JSON.parse(JSON.stringify(ATTACHMENTS || {}));
+        renderAttachmentList();
+      } catch(e) {
+        console.error('渲染附件列表错误:', e);
+      }
+    }, 100);
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('adminPassword').value = '';
+    document.getElementById('adminPassword').focus();
+  }
+}
+
+// 关闭弹窗
+function closeModal(modalId){
+  document.getElementById(modalId).classList.remove('active');
+}
+
+// 点击遮罩层关闭弹窗
+document.querySelectorAll('.modal-overlay').forEach(overlay=>{
+  overlay.addEventListener('click', function(e){
+    if(e.target === this){
+      this.classList.remove('active');
+    }
+  });
+});
+
+
+// ========== 后台维护 - Excel导入更新 ==========
+let pendingUpdate = null; // 待保存的更新数据
+
+// 拖拽上传
+document.addEventListener('DOMContentLoaded', function(){
+  const uploadArea = document.getElementById('uploadArea');
+  if(uploadArea){
+    uploadArea.addEventListener('dragover', function(e){
+      e.preventDefault();
+      this.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', function(e){
+      e.preventDefault();
+      this.classList.remove('dragover');
+    });
+    uploadArea.addEventListener('drop', function(e){
+      e.preventDefault();
+      this.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if(file) handleFileUpload(file);
+    });
+  }
+});
+
+// 处理文件上传
+function handleFileUpload(file){
+  if(!file) return;
+  
+  // 检查文件类型
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(ext !== 'xlsx' && ext !== 'xls'){
+    alert('请上传 .xlsx 或 .xls 格式的Excel文件');
+    return;
+  }
+  
+  document.getElementById('uploadFileName').style.display = 'block';
+  document.getElementById('uploadFileName').textContent = '已选择文件：' + file.name;
+  document.getElementById('progressTip').style.display = 'block';
+  document.getElementById('progressTip').textContent = '正在解析Excel文件...';
+  
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, {type:'array'});
+      parseAndCompare(workbook);
+    }catch(err){
+      document.getElementById('progressTip').textContent = '解析失败：' + err.message;
+      document.getElementById('progressTip').style.background = '#fff2f0';
+      document.getElementById('progressTip').style.borderColor = '#ffccc7';
+      document.getElementById('progressTip').style.color = '#cf1322';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// 解析Excel并对比数据
+function parseAndCompare(workbook){
+  document.getElementById('progressTip').textContent = '正在对比数据...';
+  
+  const newAllData = {};
+  const newInputMap = {};
+  const newMergeMap = {};
+  const summary = [];
+  let totalNew = 0, totalUpdated = 0, totalSheets = 0;
+  
+  workbook.SheetNames.forEach(sheetName => {
+    const worksheet = workbook.Sheets[sheetName];
+    const sheetData = {};
+    const inputs = [];
+    const merges = [];
+    
+    // 解析合并单元格
+    if(worksheet['!merges']){
+      worksheet['!merges'].forEach(merge => {
+        const startCol = numToCol(merge.s.c + 1);
+        const startRow = merge.s.r + 1;
+        const endCol = numToCol(merge.e.c + 1);
+        const endRow = merge.e.r + 1;
+        merges.push(startCol + startRow + ':' + endCol + endRow);
+      });
+    }
+    
+    // 解析单元格数据
+    for(const ref in worksheet){
+      if(ref[0] === '!') continue;
+      const cell = worksheet[ref];
+      let val = '';
+      if(cell.t === 's'){
+        val = cell.v;
+      }else if(cell.t === 'n'){
+        val = String(cell.v);
+      }else if(cell.t === 'b'){
+        val = cell.v ? 'TRUE' : 'FALSE';
+      }else if(cell.v !== undefined){
+        val = String(cell.v);
+      }
+      
+      if(val !== ''){
+        sheetData[ref] = {v: val};
+        
+        // 识别输入框（橙色背景）
+        if(cell.s && cell.s.fgColor && (cell.s.fgColor.rgb === 'FFFFC000' || cell.s.fgColor.rgb === 'FFC000')){
+          inputs.push(ref);
+        }
+      }
+    }
+    
+    newAllData[sheetName] = sheetData;
+    if(inputs.length > 0) newInputMap[sheetName] = inputs;
+    if(merges.length > 0) newMergeMap[sheetName] = merges;
+    
+    // 对比数据
+    const oldSheetData = ALL_DATA[sheetName] || {};
+    let newCount = 0, updatedCount = 0;
+    
+    for(const ref in sheetData){
+      if(!oldSheetData[ref]){
+        newCount++;
+      }else if(oldSheetData[ref].v !== sheetData[ref].v){
+        updatedCount++;
+      }
+    }
+    
+    totalNew += newCount;
+    totalUpdated += updatedCount;
+    totalSheets++;
+    
+    summary.push({
+      sheetName: sheetName,
+      oldCount: Object.keys(oldSheetData).length,
+      newCount: newCount,
+      updatedCount: updatedCount,
+      totalCount: Object.keys(sheetData).length,
+      status: (newCount > 0 || updatedCount > 0) ? '有更新' : '无变化'
+    });
+  });
+  
+  // 保存待更新数据
+  pendingUpdate = {
+    allData: newAllData,
+    inputMap: newInputMap,
+    mergeMap: newMergeMap,
+    summary: summary
+  };
+  
+  // 显示更新统计
+  showUpdateSummary(summary, totalNew, totalUpdated, totalSheets);
+  
+  document.getElementById('progressTip').textContent = '解析完成！请确认后点击保存';
+  document.getElementById('saveBtn').style.display = 'inline-block';
+}
+
+// 显示更新统计
+function showUpdateSummary(summary, totalNew, totalUpdated, totalSheets){
+  const tbody = document.querySelector('#summaryTable tbody');
+  tbody.innerHTML = '';
+  
+  summary.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + item.sheetName + '</td>' +
+                   '<td>' + item.oldCount + '</td>' +
+                   '<td style="color:#389e0d">' + (item.newCount > 0 ? '+' + item.newCount : '0') + '</td>' +
+                   '<td style="color:#fa8c16">' + (item.updatedCount > 0 ? item.updatedCount : '0') + '</td>' +
+                   '<td style="color:' + (item.status === '有更新' ? '#389e0d' : '#999') + '">' + item.status + '</td>';
+    tbody.appendChild(tr);
+  });
+  
+  document.getElementById('summaryTotal').textContent = 
+    '共 ' + totalSheets + ' 个Sheet，新增 ' + totalNew + ' 条数据，更新 ' + totalUpdated + ' 条数据';
+  
+  document.getElementById('updateSummary').style.display = 'block';
+}
+
+// 保存更新
+
+
+// ========== 附件管理 ==========
+// 附件数据结构：{ sheetName: { dwg: {name, data, type}, pdf: {name, data, type} } }
+</script>
+
+<!-- 右下角圆形齿轮按钮 -->
+<div class="fab-container">
+  <button class="fab-btn history" onclick="openUpdateLog()" title="更新履历">
+    <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+  </button>
+  <button class="fab-btn settings" onclick="openAdmin()" title="后台维护">
+    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94 0 .31.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+  </button>
+</div>
+
+<!-- 更新履历弹窗 -->
+<div class="modal-overlay" id="updateLogModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>更新履历</h3>
+      <button class="modal-close" onclick="closeModal('updateLogModal')">&times;</button>
+    </div>
+    <div class="modal-body" id="updateLogContent"></div>
+  </div>
+</div>
+
+<!-- 后台维护登录弹窗 -->
+<div class="modal-overlay" id="adminLoginModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>后台维护 - 登录</h3>
+      <button class="modal-close" onclick="closeModal('adminLoginModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="login-form">
+        <div>
+          <label>请输入密码</label>
+          <input type="password" id="adminPassword" placeholder="请输入密码" onkeypress="if(event.key==='Enter')loginAdmin()">
+        </div>
+        <div class="login-error" id="loginError">密码错误，请重新输入</div>
+        <button class="login-btn" onclick="loginAdmin()">登录</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 后台维护内容弹窗 -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <h3>后台维护 - 数据更新</h3>
+      <button class="modal-close" onclick="closeAdminModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('excelFile').click()">
+        <div class="upload-icon">&#128196;</div>
+        <div class="upload-text">点击或拖拽Excel文件到此处上传</div>
+        <div class="upload-hint">支持 .xlsx / .xls 格式，上传后将对比并更新数据</div>
+        <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none" onchange="handleFileUpload(this.files[0])">
+      </div>
+      <div class="upload-file-name" id="uploadFileName"></div>
+      <div class="progress-tip" id="progressTip"></div>
+      <div class="update-summary" id="updateSummary">
+        <h4>数据更新统计</h4>
+        <table id="summaryTable">
+          <thead><tr><th>Sheet名称</th><th>原有数据</th><th>新增数据</th><th>更新数据</th><th>状态</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div style="margin-top:12px" class="total" id="summaryTotal"></div>
+      </div>
+      <div class="attachment-section">
+        <h4>附件管理（每个Sheet的DWG/PDF文件）</h4>
+        <div class="attachment-list" id="attachmentList"></div>
+      </div>
+      <div class="admin-actions">
+        <button class="btn-cancel" onclick="closeAdminModal()">取消</button>
+        <button class="btn-save" id="saveBtn" onclick="saveUpdate()">保存并全覆盖</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 页面加载完成后强制渲染附件区域
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    if(typeof renderSheetAttachments === 'function'){
+      renderSheetAttachments();
+    }
+  }, 100);
+});
+</script>
+<script>
+// 页面加载完成后自动计算一次
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    if(typeof recalculateFormulas === 'function'){
+      recalculateFormulas();
+    }
+  }, 200);
+});
+</script>
+</body>
+</html>
