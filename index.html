@@ -26,13 +26,14 @@ body{font-family:Arial,"Microsoft YaHei",sans-serif;background:#f0f2f5;color:#33
 .table-wrapper{overflow-x:auto}
 table.data-table{width:100%;min-width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
 table.data-table td,table.data-table th{word-wrap:break-word;overflow-wrap:break-word;vertical-align:middle;white-space:normal}
-/* SAP料号列不换行 */
-table.data-table td:nth-child(3),table.data-table th:nth-child(3){white-space:nowrap}
-/* 配棉数量、组件数量、航空箱数量表头单行显示且居中 */
+/* SAP料号列不换行：仅当列标题确为"SAP料号"时由 JS 加 .col-sap 类控制，
+   避免一刀切 nth-child(3) 把航空箱表的"配棉"列(第3个td)也强制不换行导致长文字溢出 */
+table.data-table td:nth-child(3),table.data-table th:nth-child(3){word-wrap:break-word;overflow-wrap:break-word}
+/* 配棉数量、组件数量、航空箱数量列居中；允许长文字换行，避免包边说明等长文本溢出单元格 */
 table.data-table td:nth-child(6){text-align:center!important}
 table.data-table td:nth-child(7),
 table.data-table td:nth-child(8),
-table.data-table td:nth-child(9){white-space:nowrap!important;word-wrap:normal!important;text-align:center!important}
+table.data-table td:nth-child(9){text-align:center!important;word-wrap:break-word;overflow-wrap:break-word}
 /* A列左对齐 */
 table.data-table td:first-child{text-align:left!important}
 /* 输入区表头居中 */
@@ -43,8 +44,8 @@ table.data-table tr.section-header td:first-child{text-align:center!important}
 
 /* B列 - 数量 */
 
-/* C列 - SAP料号 */
-table.data-table td:nth-child(3),table.data-table th:nth-child(3){min-width:160px;max-width:200px;text-align:center!important;white-space:nowrap}
+/* C列 - SAP料号（保留列宽与居中，去掉白名单 nowrap——由 JS 按"SAP料号"表头精准加 .col-sap，避免误伤配棉等长文字列） */
+table.data-table td:nth-child(3),table.data-table th:nth-child(3){min-width:160px;max-width:200px;text-align:center!important;word-wrap:break-word;overflow-wrap:break-word}
 /* D列 - 物料描述 */
 
 /* E列 - 计算逻辑/配置 */
@@ -1520,6 +1521,12 @@ function renderTable(){
       if(col === 'B' && val !== '' && !isNaN(parseFloat(val))) tdClass += ' cell-qty';
       if(/重量|Weight|KG/.test(val)) tdClass += ' cell-weight';
       if(/请在左侧输入/.test(val)) tdClass += ' hint-cell';
+      // SAP料号列：仅当该列标题确为"SAP料号"时保持不换行(nowrap)，避免料号断行；
+      // 同时不误伤航空箱表的"配棉"等长文字列(它们在nth-child(3)位置但需换行防溢出)
+      if(rNum >= 5){
+        const hdrVal = findColHeader(col, rNum);
+        if(/SAP/.test(hdrVal) && /料号|Number|SAP/.test(hdrVal)) tdClass += ' col-sap';
+      }
       
       // 数字单元格居中（纯数字，且不是表头行）
       if(!isInputHeader && !isSection && !isNote && val !== '' && !isNaN(parseFloat(val)) && /^\d+\.?\d*$/.test(val.trim())){
