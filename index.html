@@ -306,7 +306,8 @@ const ext = file.name.split('.').pop().toLowerCase();
     reader.onload = function(e){
       try{
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, {type:'array'});
+        // cellStyles:true 才能读到单元格背景色（如输入框黄色 FFC000/FFFFC000），否则 cell.s 为空、输入框识别失效
+        const workbook = XLSX.read(data, {type:'array', cellStyles:true});
         parseAndCompare(workbook);
       }catch(err){
         console.error('解析Excel错误:', err);
