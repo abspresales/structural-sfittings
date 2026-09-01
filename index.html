@@ -373,7 +373,18 @@ function parseAndCompare(workbook){
           }
           
           if(val !== ''){
-            sheetData[ref] = {v: val};
+            // 提取公式 / 对齐，确保替换数据后不丢失渲染样式（与内联数据字段一致：h/v_align/f）
+            const cellObj = {v: val};
+            if(cell.f) cellObj.f = cell.f;
+            if(cell.s){
+              const al = cell.s.alignment;
+              const ha = al && al.horizontal;
+              // XLSX horizontal: 'general'/'left'/'center'/'right'/'justify'... 统一映射：general/无 -> default
+              if(ha) cellObj.h = (ha === 'general') ? 'default' : ha;
+              const va = al && al.vertical;
+              if(va) cellObj.v_align = va;
+            }
+            sheetData[ref] = cellObj;
             if(cell.s && cell.s.fgColor && (cell.s.fgColor.rgb === 'FFFFC000' || cell.s.fgColor.rgb === 'FFC000')){
               inputs.push(ref);
             }
@@ -476,24 +487,26 @@ function saveUpdate(){
   try {
     // 保存Excel数据
     if(pendingUpdate){
-      Object.assign(ALL_DATA, pendingUpdate.allData);
-      Object.assign(INPUT_MAP, pendingUpdate.inputMap);
-      Object.assign(MERGE_MAP, pendingUpdate.mergeMap);
+      // 整体替换（而非 Object.assign 合并）：确保新增/删除的sheet、单元格与Excel完全一致
+      ALL_DATA = pendingUpdate.allData;
+      INPUT_MAP = pendingUpdate.inputMap;
+      MERGE_MAP = pendingUpdate.mergeMap;
       
-      // 更新下拉选项
+      // 更新下拉选项（跳过所有履历类sheet，履历只在右下角独立按钮展示）
       const sheetSelect = document.getElementById('sheetSelect');
       const currentValue = sheetSelect.value;
       sheetSelect.innerHTML = '';
       Object.keys(ALL_DATA).forEach(name => {
+        if(/履历/.test(name)) return;
         const option = document.createElement('option');
         option.value = name;
         option.textContent = name;
         sheetSelect.appendChild(option);
       });
-      if(ALL_DATA[currentValue]){
+      if(ALL_DATA[currentValue] && !/履历/.test(currentValue)){
         sheetSelect.value = currentValue;
       }else{
-        currentSheet = Object.keys(ALL_DATA)[0];
+        currentSheet = Object.keys(ALL_DATA).find(n => !/履历/.test(n)) || Object.keys(ALL_DATA)[0];
         sheetSelect.value = currentSheet;
       }
     }
@@ -1575,15 +1588,19 @@ function openUpdateLog(){
   const content = document.getElementById('updateLogContent');
   let html = '<table class="update-log-table"><thead><tr><th style="width:100px">日期</th><th>修订内容</th><th style="width:80px">编辑人</th></tr></thead><tbody>';
   
+  // 履历数据源：优先用 ALL_DATA 里的履历类sheet（如「更新履历」/「履历」，随Excel同步）；无则回退到内置 UPDATE_LOG
+  const histSheetName = Object.keys(ALL_DATA).find(n => /履历/.test(n));
+  const histData = histSheetName ? ALL_DATA[histSheetName] : UPDATE_LOG;
+  
   // 按行排序
   const rows = {};
-  for(const ref in UPDATE_LOG){
+  for(const ref in histData){
     const m = ref.match(/([A-Z]+)(\d+)/);
     if(m){
       const row = parseInt(m[2]);
       const col = m[1];
       if(!rows[row]) rows[row] = {};
-      rows[row][col] = UPDATE_LOG[ref].v;
+      rows[row][col] = histData[ref].v;
     }
   }
   
@@ -1803,17 +1820,17 @@ window.addEventListener('load', async function(){
     const currentValue = sheetSelect.value;
     sheetSelect.innerHTML = '';
     Object.keys(ALL_DATA).forEach(name => {
-      // 跳过履历sheet（没有输入框）
-      if(name === '履历') return;
+      // 跳过履历类sheet（履历/更新履历，没有输入框），履历只在右下角独立按钮展示
+      if(/履历/.test(name)) return;
       const option = document.createElement('option');
       option.value = name;
       option.textContent = name;
       sheetSelect.appendChild(option);
     });
-    if(ALL_DATA[currentValue]){
+    if(ALL_DATA[currentValue] && !/履历/.test(currentValue)){
       sheetSelect.value = currentValue;
     }else{
-      currentSheet = Object.keys(ALL_DATA).find(n => n !== '履历') || Object.keys(ALL_DATA)[0];
+      currentSheet = Object.keys(ALL_DATA).find(n => !/履历/.test(n)) || Object.keys(ALL_DATA)[0];
       sheetSelect.value = currentSheet;
     }
   }
