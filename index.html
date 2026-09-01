@@ -1251,13 +1251,51 @@ function renderTable(){
       if(row > maxRow) maxRow = row;
     }
   }
-  // 合并单元格扩展maxCol
+  // 计算"真正有独立内容"的最大列（排除仅作为横向合并延续列的空列）
+  // 说明：像 A27:J27 这种把备注文本横跨铺开的整行合并，其结束列（J）本身并没有
+  // 独立数据/输入框，只是为了让长文本跨列显示。若据此把 maxCol 撑到 J，会让表格
+  // 每一行右侧都多出一个空白列。因此这里先统计真实数据列，再据此决定合并能否扩展。
+  const colToNum = (c)=>{let n=0;for(const ch of c)n=n*26+(ch.charCodeAt(0)-64);return n;};
+  let dataMaxCol = 0;
+  // 区间内被横向合并"吞并"的延续列（非合并起始列）不应被视为独立内容列
+  const mergedAway = new Set();
+  for(const rng of (MERGE_MAP[currentSheet]||[])){
+    const [start,end] = rng.split(':');
+    const sc = start.match(/[A-Z]+/)[0], sr = parseInt(start.match(/\d+/)[0]);
+    const ec = end.match(/[A-Z]+/)[0], er = parseInt(end.match(/\d+/)[0]);
+    const sNum = colToNum(sc), eNum = colToNum(ec);
+    if(eNum > sNum){ // 横向合并：结束列比起始列大
+      for(let r=sr; r<=er; r++){
+        for(let ci=sNum+1; ci<=eNum; ci++){ // 除起始列外都是被吞并的延续列
+          mergedAway.add(r+'_'+ci);
+        }
+      }
+    }
+  }
+  for(const ref in sheetData){
+    const m = ref.match(/([A-Z]+)(\d+)/);
+    if(!m) continue;
+    const colLet = m[1], rowNum = parseInt(m[2]);
+    const cNum = colToNum(colLet);
+    const cell = sheetData[ref];
+    const hasVal = cell && cell.v !== undefined && String(cell.v).trim() !== '';
+    const isInput = inputs.includes(ref);
+    // 只要该单元格有值或是输入框，且不是横向合并的延续列，就算作真实数据列
+    if((hasVal || isInput) && !mergedAway.has(rowNum+'_'+cNum)){
+      if(cNum > dataMaxCol) dataMaxCol = cNum;
+    }
+  }
+  // 合并单元格扩展maxCol：仅当合并结束列 <= 真实数据最大列时才允许扩展，
+  // 避免备注/标题跨列合并（如 A27:J27）把表格右侧撑出一个空列
   for(const rng of (MERGE_MAP[currentSheet]||[])){
     const end = rng.split(':')[1];
     const endCol = end.match(/[A-Z]+/)[0];
-    const colToNum = (c)=>{let n=0;for(const ch of c)n=n*26+(ch.charCodeAt(0)-64);return n;};
-    if(colToNum(endCol) > maxCol) maxCol = colToNum(endCol);
+    if(colToNum(endCol) <= dataMaxCol) {
+      if(colToNum(endCol) > maxCol) maxCol = colToNum(endCol);
+    }
   }
+  // 兜底：真实数据列可能超过默认9，或某些表格确实需要合并结束列，取两者更大值
+  if(dataMaxCol > maxCol) maxCol = dataMaxCol;
   
   // 计算最小起始列（去掉左边空白列）
   let minCol = 1;
@@ -1308,15 +1346,33 @@ function renderTable(){
     const cVal = disp(rowCells['C'+rNum]);
     
     // 判断行类型
+    // 先算"该行除A列外是否还有独立数据"：真正的分区标题行（如"落地支架(Ground Stacking...)"）
+    // 通常是孤立的单列单元格（只有A列有文本），B~其他列均为空。
+    // 而像"可伸缩拉杆 _0.5m（可调范围420mm-600mm）"这类被误判为标题的，实际上是数据行
+    // （B列有数量、C列有SAP、D列有描述、I列有重量），不应被当作分区标题。
+    // 因此只有"仅A列有内容、其余列无独立数据"的行才允许被判为 section 标题。
+    let rowHasDataBeyondA = false;
+    for(let cc=2; cc<=maxCol; cc++){
+      const ccol = numToCol(cc);
+      if(ccol === 'A') continue;
+      const cref = ccol + rNum;
+      const cell = sheetData[cref];
+      const hasVal = cell && cell.v !== undefined && String(cell.v).trim() !== '';
+      if(hasVal || inputs.includes(cref)){
+        rowHasDataBeyondA = true;
+        break;
+      }
+    }
     const isNote = aVal && /PS：|注：|备注|仅供参考|请勿|暂未|注意/.test(aVal);
     // 显式"类别"分组标题：用户在新版Excel里以黄色填充+"类别："前缀标记分类标题（如"类别：落地支架..."），
     // 这类行下方的内容即该分类的明细。除第1行主标题外，凡以"类别："开头的一律作为分组标题。
     const isCatSection = /^类别[:：]/.test(aVal) && rNum > 1;
     // 标准分区：以括号(+可选冒号)结尾且较短；或标准区块标题开头(括号后可能带附加说明，如NT V2的航空箱标题)
-    const isStdSection = /[（(].*[)）]：?$/.test(aVal) && aVal.length < 60;
-    const isLongSection = /^落地支架\s*[（(]Ground Stacking/.test(aVal)
+    // ★关键：排除"除A列外还有其他数据"的行，避免把数据行误判成分区标题（解决FL V2底部单独起标题的问题）
+    const isStdSection = /[（(].*[)）]：?$/.test(aVal) && aVal.length < 60 && !rowHasDataBeyondA;
+    const isLongSection = (/^落地支架\s*[（(]Ground Stacking/.test(aVal)
                        || /^方式[12][:：]/.test(aVal)
-                       || /^航空箱Flight Cases/.test(aVal);
+                       || /^航空箱Flight Cases/.test(aVal)) && !rowHasDataBeyondA;
     const isSection = aVal && (isCatSection || isStdSection || isLongSection) && !/最大支持|排列方式|计算公式/.test(aVal);
     const isInputHeader = (/Width|Height|Quantity|宽度|高度|数量/.test(bVal+cVal) && !inputs.includes('B'+rNum));
     const isInputRow = aVal && /排列方式|Input screen/.test(aVal);
