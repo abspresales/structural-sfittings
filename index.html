@@ -523,14 +523,14 @@ function saveUpdate(){
     // 关闭弹窗
     closeAdminModal();
     
-    // 保存成功：自动导出最新的 data.json（用于提交到 GitHub 仓库，使线上永久更新）
+    // 保存成功：自动导出最新的 structural-sfittings.json（用于提交到 GitHub 仓库，使线上永久更新）
     // 说明：本工具为纯前端静态站点，"保存"仅更新当前浏览器会话内的数据；
-    //       要把更新真正发布到线上，必须把导出的 data.json 提交到 GitHub Pages 仓库。
+    //       要把更新真正发布到线上，必须把导出的 structural-sfittings.json 提交到 GitHub Pages 仓库。
     setTimeout(function(){
       try{
         exportDataJson();
-      }catch(e){ console.error('自动导出data.json失败:', e); }
-      alert('已保存并自动导出 data.json。\n\n⚠️ 重要：本工具是纯前端网站，"保存"只在当前浏览器生效。\n要让线上永久更新，请把刚下载的 data.json 提交（commit + push）到 GitHub 仓库，GitHub Pages 会自动重新发布。');
+      }catch(e){ console.error('自动导出 structural-sfittings.json 失败:', e); }
+      alert('已保存并自动导出 structural-sfittings.json。\n\n⚠️ 重要：本工具是纯前端网站，"保存"只在当前浏览器生效。\n要让线上永久更新，请把刚下载的 structural-sfittings.json 提交（commit + push）到 GitHub 仓库，GitHub Pages 会自动重新发布。');
     }, 100);
     
   } catch(e) {
@@ -579,7 +579,7 @@ function exportDataJson(){
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;
-    a.download='data.json';
+    a.download='structural-sfittings.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1776,18 +1776,18 @@ window.addEventListener('load', function(){
 // 加载外部数据
 async function loadDataFromJson(){
   try{
-    const resp=await fetch('data.json');
+    const resp=await fetch('structural-sfittings.json');
     if(!resp.ok)throw new Error('加载失败');
     const data=await resp.json();
     if(data.ALL_DATA&&Object.keys(data.ALL_DATA).length>0){
       ALL_DATA=data.ALL_DATA;
       INPUT_MAP=data.INPUT_MAP||{};
       MERGE_MAP=data.MERGE_MAP||{};
-      console.log('已从 data.json 加载数据：'+Object.keys(ALL_DATA).length+' 个工作表');
+      console.log('已从 structural-sfittings.json 加载数据：'+Object.keys(ALL_DATA).length+' 个工作表');
       return true;
     }
   }catch(e){
-    console.warn('data.json 加载失败（本地打开时属正常现象，部署到服务器后自动加载）');
+    console.warn('structural-sfittings.json 加载失败（本地打开时属正常现象，部署到服务器后自动加载）');
   }
   return false;
 }
