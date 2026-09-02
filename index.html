@@ -544,9 +544,13 @@ function saveUpdate(){
       }
     }
     
-    // 保存附件数据
+    // 保存附件数据（合并而非整体替换，保留上传后已直接写入 ATTACHMENTS 的图纸映射）
     if(pendingAttachments){
-      ATTACHMENTS = JSON.parse(JSON.stringify(pendingAttachments));
+      const pendingCopy = JSON.parse(JSON.stringify(pendingAttachments));
+      if(!ATTACHMENTS) ATTACHMENTS = {};
+      Object.keys(pendingCopy).forEach(sheetName => {
+        ATTACHMENTS[sheetName] = pendingCopy[sheetName];
+      });
     }
     
     // 重新渲染
@@ -661,7 +665,7 @@ function renderAttachmentList(){
     const item = document.createElement('div');
     item.className = 'attachment-item';
     
-    const att = pendingAttachments && pendingAttachments[sheetName] ? pendingAttachments[sheetName] : (ATTACHMENTS[sheetName] || {});
+    const att = (ATTACHMENTS && ATTACHMENTS[sheetName]) ? ATTACHMENTS[sheetName] : (pendingAttachments && pendingAttachments[sheetName] ? pendingAttachments[sheetName] : {});
     
     const dwgFile = att.dwg;
     const pdfFile = att.pdf;
@@ -701,13 +705,17 @@ function uploadAttachment(sheetName, fileType){
     const file = e.target.files[0];
     if(!file) return;
     
-    // 1) 记录文件名（不含 base64，文件本体走"保存到本地→脚本推送→仓库 drawings/"链路）
-    if(!pendingAttachments) pendingAttachments = {};
-    if(!pendingAttachments[sheetName]) pendingAttachments[sheetName] = {};
-    pendingAttachments[sheetName][fileType] = {
+    // 1) 直接写进正式 ATTACHMENTS（不再停留在 pendingAttachments 暂存），保证导出 json 时一定带上该图纸映射
+    if(!ATTACHMENTS) ATTACHMENTS = {};
+    if(!ATTACHMENTS[sheetName]) ATTACHMENTS[sheetName] = {};
+    ATTACHMENTS[sheetName][fileType] = {
       name: file.name,
       url: 'drawings/' + file.name
     };
+    // 同步清理暂存区里同 sheet 同类型的旧值，避免冲突
+    if(pendingAttachments && pendingAttachments[sheetName]){
+      delete pendingAttachments[sheetName][fileType];
+    }
     
     // 2) 把图纸文件保存到本地 Downloads，供发布脚本监控（文件名加"图纸_"前缀+sheet+类型便于脚本归属）
     try{
@@ -735,9 +743,15 @@ function safeFileName(name){
 
 // 删除附件
 function deleteAttachment(sheetName, fileType){
-  if(!pendingAttachments || !pendingAttachments[sheetName]) return;
-  delete pendingAttachments[sheetName][fileType];
+  if(ATTACHMENTS && ATTACHMENTS[sheetName]){
+    delete ATTACHMENTS[sheetName][fileType];
+    // 若该 sheet 下的 dwg/pdf 都删光了，清掉整个 sheet 记录
+    if(!ATTACHMENTS[sheetName].dwg && !ATTACHMENTS[sheetName].pdf){
+      delete ATTACHMENTS[sheetName];
+    }
+  }
   renderAttachmentList();
+  updateAttachmentDisplay();
 }
 
 // 前台附件下载区所占的 GitHub Pages 仓库根地址（图纸文件存放于仓库 drawings/ 目录）
