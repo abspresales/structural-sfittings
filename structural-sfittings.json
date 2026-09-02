@@ -607,7 +607,7 @@
     },
     "PL V3落地支架": {
       "A1": {
-        "v": "类别：PL V3-落地支架计算公式(PL V3 Series Calculation Formula)-采用23旧款落地支架（请注意：是输入箱体的数量，不是尺寸）"
+        "v": "PL V3-落地支架计算公式(PL V3 Series Calculation Formula)-采用23旧款落地支架（请注意：是输入箱体的数量，不是尺寸）"
       },
       "A2": {
         "v": "宽度Width"
@@ -634,7 +634,7 @@
         "v": "←请在左侧输入箱体排列（箱体的数量）\n←Input cabinet arrangement on the left."
       },
       "A4": {
-        "v": "类别：落地支架(Ground Stacking Components)："
+        "v": "落地支架(Ground Stacking Components)："
       },
       "A5": {
         "v": "组件名称\nComponents"
@@ -807,7 +807,7 @@
         "v": "≈4.18KG"
       },
       "A14": {
-        "v": "类别：方式1：旧款航空箱Flight Cases：(如不配航空箱，标准用木箱打包)"
+        "v": "旧款航空箱Flight Cases：(如不配航空箱，标准用木箱打包)"
       },
       "A15": {
         "v": "航空箱名称\nComponents"
@@ -923,7 +923,7 @@
         "v": "46.1KG"
       },
       "A21": {
-        "v": "类别：方式2：新款航空箱Flight Cases：(如不配航空箱，标准用木箱打包)"
+        "v": "新款航空箱Flight Cases：(如不配航空箱，标准用木箱打包)"
       },
       "A22": {
         "v": "航空箱名称\nComponents"
@@ -4513,7 +4513,7 @@
         "v": "箱体高度\nHeight of big panel"
       },
       "C2": {
-        "v": "小箱体宽度（不适用810高度箱体）\nWidth of small panel(540or1080)"
+        "v": "小箱体宽度\nWidth of small panel(540or1080)"
       },
       "D2": {
         "v": "公式优先选择双倍背条"
@@ -4841,9 +4841,6 @@
       "C3": {
         "v": "←请在左侧输入箱体排列（箱体的数量）\n←​Input cabinet arrangement on the left."
       },
-      "D3": {
-        "v": "公式优先选择3IN1背条"
-      },
       "A4": {
         "v": "XL-背条组件（Wall Mounted Bracket Components）："
       },
@@ -5170,9 +5167,6 @@
       },
       "C3": {
         "v": "←请在左侧输入箱体排列（箱体的数量）\n←​Input cabinet arrangement on the left."
-      },
-      "D3": {
-        "v": "公式优先选择3IN1背条"
       },
       "A4": {
         "v": "KLCOB C04升级版-背条组件（Wall Mounted Bracket Components）："
@@ -5904,9 +5898,6 @@
       },
       "C3": {
         "v": "←请在左侧输入箱体排列（箱体的数量）\n←​Input cabinet arrangement on the left."
-      },
-      "D3": {
-        "v": "公式优先选择3IN1背条"
       },
       "A4": {
         "v": "KLCOB V2-背条组件（Wall Mounted Bracket Components）：--KLCOB V2&KLCOB V3&CL V3背条相同"
@@ -6772,9 +6763,6 @@
       "C3": {
         "v": "←请在左侧输入箱体排列（箱体的数量）\n←​Input cabinet arrangement on the left."
       },
-      "D3": {
-        "v": "公式优先选择3IN1背条"
-      },
       "A4": {
         "v": "KLCOB V3-背条组件（Wall Mounted Bracket Components）：--KLCOB V2&KLCOB V3&CL V3背条相同"
       },
@@ -7581,9 +7569,6 @@
       },
       "C3": {
         "v": "←请在左侧输入箱体排列（箱体的数量）\n←​Input cabinet arrangement on the left."
-      },
-      "D3": {
-        "v": "公式优先选择3IN1背条"
       },
       "A4": {
         "v": "CL V3-背条组件（Wall Mounted Bracket Components）：--KLCOB V2&KLCOB V3&CL V3背条相同"
@@ -9071,20 +9056,44 @@
       "A3": {
         "v": "500*1000箱体"
       },
+      "B3": {
+        "v": "1"
+      },
+      "C3": {
+        "v": "1"
+      },
       "E3": {
         "v": "←请在左侧输入箱体排列（箱体的数量）\n←Input cabinet arrangement on the left."
       },
       "A4": {
         "v": "250*750箱体"
       },
+      "B4": {
+        "v": "1"
+      },
+      "C4": {
+        "v": "1"
+      },
       "A5": {
         "v": "250*500箱体"
+      },
+      "B5": {
+        "v": "1"
+      },
+      "C5": {
+        "v": "1"
       },
       "D5": {
         "v": "小箱体在顶部的时候"
       },
       "A6": {
         "v": "250*500箱体"
+      },
+      "B6": {
+        "v": "1"
+      },
+      "C6": {
+        "v": "1"
       },
       "D6": {
         "v": "小箱体在侧面的时候"
@@ -9902,6 +9911,16 @@
       "C3",
       "D3"
     ],
+    "K V4背条+包边配置": [
+      "B3",
+      "C3",
+      "B4",
+      "C4",
+      "B5",
+      "C5",
+      "B6",
+      "C6"
+    ],
     "K PLUS背条配置": [
       "A3",
       "B3",
@@ -10314,7 +10333,7 @@
     "XL背条+包边配置": [
       "A1:I1",
       "C2:I2",
-      "D3:I3",
+      "C3:I3",
       "A4:I4",
       "D5:E5",
       "F5:H5",
@@ -10352,8 +10371,8 @@
     ],
     "KLCOB背条+包边配置": [
       "A1:F1",
-      "D2:F2",
-      "D3:F3",
+      "C2:F2",
+      "C3:F3",
       "A4:F4",
       "A12:F12"
     ],
@@ -10366,8 +10385,8 @@
     ],
     "KLCOB V2背条+包边配置": [
       "A1:F1",
-      "D2:F2",
-      "D3:F3",
+      "C2:F2",
+      "C3:F3",
       "A4:F4",
       "A15:F15",
       "A30:F30",
@@ -10383,8 +10402,8 @@
     ],
     "KLCOB V3背条+包边配置": [
       "A1:F1",
-      "D2:F2",
-      "D3:F3",
+      "C2:F2",
+      "C3:F3",
       "A4:F4",
       "A15:F15",
       "A28:F28",
@@ -10399,8 +10418,8 @@
     ],
     "CL V3背条+包边配置": [
       "A1:F1",
-      "D2:F2",
-      "D3:F3",
+      "C2:F2",
+      "C3:F3",
       "A4:F4",
       "A15:F15",
       "F12:F14"
