@@ -1264,6 +1264,16 @@ function applySmartColumnWidths(table){
     if(sum > totalCols) totalCols = sum;
   }
   if(totalCols===0) return;
+  // ★防止"整行备注/标题跨列合并"把 colgroup 撑出多余空列：
+  //   表头行的 colspan 总和 = 表格的真实列数。若某行的 colspan 总和(如备注行 A27:J27 的 colspan=10)
+  //   超过表头列数(实际只有9列)，说明该合并只为了把长文本横向铺开，会多出一个被孤立的列，
+  //   导致方式2表右侧留下 138px 空白。这里把 totalCols 封顶到表头列数，消除多余空列。
+  var hdrRow = getHeaderRowForTable(table);
+  if(hdrRow){
+    var hdrSum = 0;
+    Array.prototype.forEach.call(hdrRow.children, function(td){ hdrSum += (parseInt(td.getAttribute('colspan'))||1); });
+    if(hdrSum > 0 && totalCols > hdrSum) totalCols = hdrSum;
+  }
 
   // 把"最像表头"那一行的单元格，按 colspan 展开到每一个真实列上，
   // 使每个真实列都能拿到自己的表头语义（避免 colspan 导致列语义错位）。
