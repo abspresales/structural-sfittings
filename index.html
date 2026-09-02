@@ -225,9 +225,9 @@ td[data-formula-ref].flash-update{animation:flashUpdate 1.15s ease forwards;bord
 .attachment-item .delete-btn:hover{background:#fff1f0}
 /* 附件下载区（置于筛选工具条内，与导出按钮并排） */
 .attachment-container{display:inline-flex;align-items:center;margin-left:4px;flex:0 0 auto;}
-.sheet-attachments{background:transparent;border:1px solid #e6eef6;border-radius:6px;padding:5px 12px;margin:0;box-shadow:none;display:inline-flex;align-items:center;gap:10px;flex-wrap:nowrap;}
+.sheet-attachments{background:transparent;border:1px solid #e6eef6;border-radius:6px;padding:6px 12px;margin:0;box-shadow:none;display:inline-flex;flex-direction:column;align-items:flex-start;gap:4px;}
 .sheet-attachments .label{font-size:12px;font-weight:600;color:#1a3a5c;white-space:nowrap}
-.sheet-attachments .download-link{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#f0f5fa;color:#193a5b;border-radius:4px;font-size:12px;text-decoration:none;transition:background 0.2s;white-space:nowrap;}
+.sheet-attachments .download-link{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:#f0f5fa;color:#193a5b;border-radius:4px;font-size:12px;text-decoration:none;transition:background 0.2s;white-space:nowrap;}
 .sheet-attachments .download-link:hover{background:#e0eaf5}
 .sheet-attachments .download-link .icon{font-size:14px}
 .sheet-attachments .no-file{font-size:12px;color:#999}
@@ -245,7 +245,7 @@ html,body{overflow-x:hidden;width:100%}
   .filter-group select{min-width:0;width:100%;max-width:100%;font-size:12px}
   .export-btn{font-size:12px;padding:0 14px;height:32px;line-height:32px;width:100%}
   #attachmentContainer{display:block!important;margin-left:0!important;width:100%}
-  .sheet-attachments{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;width:100%;border:none;padding:6px 0}
+  .sheet-attachments{display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;border:none;padding:6px 0}
   .sheet-attachments .label{width:100%}
   .sheet-attachments .download-link{word-break:break-all;font-size:11px}
   .note-bar{font-size:12px;padding:8px 12px;word-break:break-word;white-space:normal;width:100%;max-width:100%;box-sizing:border-box}
@@ -769,14 +769,16 @@ function updateAttachmentDisplay(){
   }
   
   let html = '<div class="sheet-attachments">';
-  html += '<span class="label">附件下载：</span>';
+  html += '<span class="label">附件下载(图纸供参考)</span>';
   
+  // 第一行：DWG
   if(att.dwg){
     const u = ATTACH_BASE + att.dwg.url;
     html += '<a class="download-link" href="' + u + '" download="' + att.dwg.name + '" target="_blank" rel="noopener">' +
             '<span class="icon">&#128230;</span> DWG：' + att.dwg.name + '</a>';
   }
   
+  // 第二行：PDF
   if(att.pdf){
     const u = ATTACH_BASE + att.pdf.url;
     html += '<a class="download-link" href="' + u + '" download="' + att.pdf.name + '" target="_blank" rel="noopener">' +
@@ -815,15 +817,8 @@ window.onerror = function(msg, url, line, col, error) {
       <select id="sheetSelect"><option value="PL V3落地支架">PL V3落地支架</option></select>
     </div>
     <button class="export-btn" onclick="exportExcel()">导出Excel</button>
-    <div id="attachmentContainer" class="attachment-container">
-  <div class="sheet-attachments">
-    <span class="label">附件下载：</span>
-    <a class="download-link" href="data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA2MCA+PgpzdHJlYW0KQlQgL0YxIDI0IFRmIDEwMCA3MDAgVGQgKFBMIFYzIFRlc3QgQXR0YWNobWVudCkgVGogRVQKZW5kc3RyZWFtCmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL0hlbHZldGljYSA+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjY2IDAwMDAwIG4gCjAwMDAwMDAzNzUgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0NTIKJSVFT0Y=" download="PL_V3_安装示意图.pdf">
-      <span class="icon">&#128196;</span> PDF：PL_V3_安装示意图.pdf
-    </a>
+    <div id="attachmentContainer" class="attachment-container"></div>
   </div>
-</div>
-</div>
 <div id="tableContainer"></div>
 
 <script>
