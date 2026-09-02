@@ -113,6 +113,10 @@ table.data-table td:nth-child(2){text-align:center!important;white-space:pre-lin
 /* 输入区行 */
 .input-row td{font-weight:700!important;white-space:pre-line;vertical-align:middle;text-align:center;background:#fffbe6}
 .input-row td.hint-cell{text-align:left!important;padding-left:16px;font-weight:400;background:#fffbe6;white-space:pre-line!important;}
+/* 输入区重置按钮单元格（覆盖 .input-header td 的居中，按钮右对齐收起） */
+.input-header td.reset-cell{text-align:right!important;background:#f5f7fa;padding:4px 8px;white-space:nowrap;vertical-align:middle}
+.input-reset-btn{padding:4px 10px;font-size:12px;border:0.5px solid #d3d1c7;border-radius:4px;background:#fff;color:#5f5e5a;cursor:pointer;font-weight:500;white-space:nowrap;line-height:1.2}
+.input-reset-btn:hover{background:#faeeda;border-color:#ef9f27;color:#854f0b}
 /* 合并单元格 */
 table.data-table td.row-merge{vertical-align:middle;text-align:center}
 table.data-table td.col-merge{vertical-align:middle;text-align:center}
@@ -1106,6 +1110,14 @@ function recalculateFormulas(){
   });
 }
 
+// ========== 输入区重置（当前sheet所有输入框归0） ==========
+function resetSheetInput(){
+  document.querySelectorAll('#tableContainer input[data-ref]').forEach(input => {
+    input.value = 0;
+  });
+  recalculateFormulas();
+}
+
 // ========== 数据驱动列宽 ==========
 // 依据每张表的表头语义为每列分配合理列宽，生成 <colgroup>，替换写死的固定列宽模式。
 var COL_HEADER_KW = {
@@ -1720,6 +1732,8 @@ function renderTable(){
     html += '<tr class="'+rowClass+'">';
     
     const rowHasInput = inputs.includes('B'+rNum);
+    // 本行所有输入框的 ref（按列序），用于把「重置」按钮紧贴最后一个输入框放置
+    const rowInputRefs = inputs.filter(r => parseInt(r.replace(/[A-Z]+/,''),10) === rNum);
     
     for(let ci=1; ci<=maxCol-minCol+1; ci++){
       const col = numToCol(ci + minCol - 1);
@@ -1760,11 +1774,12 @@ function renderTable(){
         userOverrideHAlign = 'text-align:left!important;';
       }
       
-      // 2. 物料描述和计算逻辑列居左（找本列表头，不跨表格）
+      // 2. 物料描述、计算逻辑和配置列居左（找本列表头，不跨表格）
       if(!userOverrideHAlign && rNum >= 5){
         const headerVal = findColHeader(col, rNum);
         if(headerVal.includes('物料描述') || headerVal.includes('Material Description') ||
-           headerVal.includes('计算逻辑') || headerVal.includes('Calculation Logic')){
+           headerVal.includes('计算逻辑') || headerVal.includes('Calculation Logic') ||
+           headerVal.includes('配置') || headerVal.includes('Configuration')){
           userOverrideHAlign = 'text-align:left!important;';
         }
       }
@@ -1858,7 +1873,13 @@ function renderTable(){
       
       // 输入框
       if(inputs.includes(ref)){
-        html += '<td class="'+tdClass+'"'+mergeAttr+excelAlignStyle+'><input type="number" min="0" value="'+val+'" data-ref="'+ref+'" oninput="recalculateFormulas()"></td>';
+        html += '<td class="'+tdClass+'"'+mergeAttr+excelAlignStyle+'><input type="number" min="0" value="0" data-ref="'+ref+'" oninput="recalculateFormulas()"></td>';
+        // 「重置」按钮放到本输入区块的【第一行】末尾，紧跟该行最后一个输入框（贴近数字）。
+        // 条件：本行是输入块起始行（本行有输入框、且上一行无输入框），这样多输入行sheet(如K V4)也只放1个按钮。
+        const prevRowInputs = inputs.filter(r => parseInt(r.replace(/[A-Z]+/,''),10) === rNum - 1).length;
+        if(rowInputRefs.length && !prevRowInputs && ref === rowInputRefs[rowInputRefs.length - 1]){
+          html += '<td class="reset-cell"><button class="input-reset-btn" onclick="resetSheetInput()" title="把本输入区的宽度/高度重置为0">↺ 重置</button></td>';
+        }
         continue;
       }
       
@@ -1946,10 +1967,30 @@ function getLogicalGroupWidths(table, firstOnly){
   }
   return sums;
 }
+// —— 非逻辑(备注/other)列累计总宽 —— 用于判断一张结构表右侧是否有"备注/注意事项"这类列，
+//    以便在跨表列宽对齐时为它们【预留最小宽度】(否则会被前6明细列挤到0宽，长文本暴力折行撑高行高)。
+function getOtherGroupWidths(table){
+  var cg = table.querySelector('colgroup'); if(!cg) return 0;
+  var cols = Array.prototype.slice.call(cg.children);
+  var hdr = getHeaderRowForTable(table); if(!hdr) return 0;
+  var phyType = [];
+  var pos = 0;
+  Array.prototype.forEach.call(hdr.children, function(td){
+    var cs = parseInt(td.getAttribute('colspan'))||1;
+    var t = colTypeByHeader((td.textContent||'').trim());
+    for(var k=0;k<cs;k++){ phyType[pos+k] = t; }
+    pos += cs;
+  });
+  var total = 0;
+  for(var i=0;i<cols.length && i<phyType.length;i++){
+    if(phyType[i]==='other'){ total += (parseFloat(cols[i].style.width)||0); }
+  }
+  return total;
+}
 // 按逻辑列宽度序列(逻辑列0=name,1=qty,2=sap,3=desc,4=logic,5=weight)重设一张表的列宽。
 // 定位含合并跨列的表头：把每个语义组(相邻同类型物理列)的总宽设为对应的逻辑列目标宽，
 // 组内各物理列按原宽度占比分摊，从而在保持内部比例的同时让"逻辑列(如物料描述)"在三表对齐。
-function applyLogicalWidths(table, logicalTargets){
+function applyLogicalWidths(table, logicalTargets, otherReserve){
   var cg = table.querySelector('colgroup'); if(!cg) return;
   var cols = Array.prototype.slice.call(cg.children);
   var hdr = getHeaderRowForTable(table); if(!hdr) return;
@@ -1995,9 +2036,33 @@ function applyLogicalWidths(table, logicalTargets){
   //   并把 other 列压到最小——绝不因 other 列挤占而缩小逻辑列(否则跨表对齐失效)。
   var avail = getTableAvailableWidth(table);
   var total = headSum;   // 逻辑列基准之和；逻辑列不因 other 列缩放，保证跨表对齐
-  if(avail > 0 && headSum > 0){
+  var hasTail = tailGroups.length > 0 && tailSum > 0;
+  // ★为右侧"备注/注意"等 other 列预留最小宽度：
+  //   否则(逻辑列占满容器时)other 列被压到 0 宽，长文本暴力折行会把行高撑到几百px(见 KLCOB 包边组件表)。
+  //   otherReserve 由 alignFirstColsAcrossTables 对整组统一算出(跨表一致)——
+  //   即便【本表】无实质 other 列，也把明细列缩到 (avail-otherReserve)，保证与「含备注列的表」明细列对齐。
+  if(otherReserve > 0 && avail > 0 && headSum > 0){
+    var logicAvail = avail - otherReserve;
+    if(logicAvail <= 0) logicAvail = Math.max(avail - 8, 1);   // 极端保守兜底
+    var lgScale = logicAvail / headSum;
+    if(lgScale > 1) lgScale = 1;   // 明细列未超可用空间时不放大(保持 seq 基准)，gap 作为右侧留白
+    for(var lg2=0; lg2<logicGroups.length; lg2++){ var l0b=logicGroups[lg2][0], l1b=logicGroups[lg2][1];
+      for(var m7b=l0b;m7b<l1b;m7b++){ var cwLb=(parseFloat(cols[m7b].style.width)||0);
+        if(cwLb>0){ cols[m7b].style.width=(cwLb*lgScale).toFixed(1)+'px'; } } }
+    if(hasTail){   // 本表有备注列：把预留给它的 otherReserve 按各列原宽占比分摊，长备注在合理宽度内折行
+      for(var ogB=0; ogB<tailGroups.length; ogB++){ var o0b=tailGroups[ogB][0], o1b=tailGroups[ogB][1];
+        for(var m8b=o0b;m8b<o1b;m8b++){ var cwOb=(parseFloat(cols[m8b].style.width)||0);
+          var share = tailSum>0 ? otherReserve*(cwOb/tailSum) : otherReserve/tailGroups.length;
+          cols[m8b].style.width = share.toFixed(1)+'px'; } }
+    }
+    // 无备注列的表：右侧不填充该 reserve，明细列保持在 logicAvail，右侧留白 → 明细列仍与含备注列表对齐
+    // total 以"列宽实际总和"为准，避免 lgScale 封顶(未缩放)时列宽与逻辑预留不一致带来的浮点多算/拉伸
+    var scaledSum = 0;
+    for(var miS=0; miS<cols.length; miS++){ scaledSum += (parseFloat(cols[miS].style.width)||0); }
+    total = scaledSum;
+  } else if(avail > 0 && headSum > 0){
     var rest = avail - headSum;   // 逻辑列占满后剩余给 other 列的空间(可为负=逻辑列超容器)
-    if(tailGroups.length > 0 && tailSum > 0){
+    if(hasTail){
       if(rest >= 0){   // 逻辑列未超容器：逻辑列保持 seq 基准(跨表对齐)，other 列占 rest(放大或压缩)
         var scale2 = rest / tailSum;
         for(var g=0;g<tailGroups.length;g++){ var s0=tailGroups[g][0], s1=tailGroups[g][1];
@@ -2010,7 +2075,7 @@ function applyLogicalWidths(table, logicalTargets){
           for(var m8=o0;m8<o1;m8++){ var cwO=(parseFloat(cols[m8].style.width)||0); if(cwO>0){ cols[m8].style.width=Math.min(cwO*scale,8).toFixed(1)+'px'; } } }
       }
       total = avail;
-    } else if(avail !== headSum && avail > 0){
+    } else if(avail !== headSum){
       // 无 other 列：逻辑列等比缩放铺满容器(同一scale，仍跨表对齐)。headSum 可能>或<avail
       var scale3 = avail/headSum;
       for(var mi2=0;mi2<cols.length;mi2++){ var cwB=(parseFloat(cols[mi2].style.width)||0); if(cwB>0){ cols[mi2].style.width=(cwB*scale3).toFixed(1)+'px'; } }
@@ -2160,16 +2225,26 @@ function alignFirstColsAcrossTables(container){
   });
   if(!(seq2[0] && seq2[1] && seq2[2] && seq2[3])) return;
   // ★只约束"前6逻辑列之和 ≤ 容器宽"，保证多张结构表的前6列(名称/数量/SAP/描述/逻辑/重量)完全跨表对齐。
-  //   备注/空列等其他列不参与挤占逻辑列——它们占 容器宽-前6列和 的剩余(可能为0或被压缩)。
-  //   这样 KLCOB 等含备注列的表，其前6明细列仍与背条组件表完全对齐(用户核心诉求)。
+  //   备注/空列等其他列不再"完全挤占"——为它们预留一个最小宽度(见下)，避免长备注文本被压到0宽暴力折行撑高行高。
   var avail2 = getTableAvailableWidth(struct[0]);
+  // ★计算整组"其他(备注/注意)列"应预留的宽度：取组内所有结构表其他列内容宽度的最大值，并封顶，
+  //   使英文长备注(如KLCOB"用于左右包边同时有上下倒角…")得以在合理宽度内折行，而非撑成几百px高的行。
+  var MAX_OTHER_RESERVE = 176;   // 备注列最大预留宽(px)；够容纳约2行中文备注，又不至于过度压缩明细列
+  var otherReserve = 0;
+  struct.forEach(function(t){
+    var ow = getOtherGroupWidths(t);
+    if(ow > otherReserve) otherReserve = ow;
+  });
+  if(otherReserve > MAX_OTHER_RESERVE) otherReserve = MAX_OTHER_RESERVE;
+  // 若备注列内容过少(如仅几十px)，不必为了它牺牲明细列宽度 → 不预留(交给 applyLogicalWidths 自然分配)
+  if(otherReserve < 30) otherReserve = 0;
   var seqSum = seq2[0]+seq2[1]+seq2[2]+seq2[3]+seq2[4]+seq2[5];
-  if(avail2 > 0 && seqSum > avail2){
-    var seqScale = avail2 / seqSum;
+  if(avail2 > 0 && seqSum + otherReserve > avail2){
+    var seqScale = (avail2 - otherReserve) / seqSum;   // 预留 otherReserve 后，明细列等比缩到剩余空间(跨表仍一致)
     for(var si=0; si<seq2.length; si++){ seq2[si] = Math.round(seq2[si]*seqScale*10)/10; }
   }
   // 让无备注/空列的表(如NX)尾部也占满:其余列本来由 applyLogicalWidths 按 rest=avail-headSum 填充
-  struct.forEach(function(t){ applyLogicalWidths(t, seq2); });
+  struct.forEach(function(t){ applyLogicalWidths(t, seq2, otherReserve); });
 }
 
 function exportExcel(){
@@ -2219,9 +2294,11 @@ document.getElementById('sheetSelect').addEventListener('change', function(){
 });
 
 renderTable();
+// 首屏：输入框初始为0，公式区同步按0计算（避免与默认值3/4算出的结果不一致）
+setTimeout(function(){ recalculateFormulas(); }, 50);
 
 // 更新履历数据
-const UPDATE_LOG = {"A1": {"v": "日  期"}, "B1": {"v": "修   订   内   容"}, "C1": {"v": "编辑人"}, "A2": {"v": "45709"}, "B2": {"v": "输出首版落地支架速算表（国际SR使用）V1.0"}, "C2": {"v": "杜辉"}, "A3": {"v": "45723"}, "B3": {"v": "计算公式新增对长箱体的支持，表格版本V1.1-20250307"}, "C3": {"v": "杜辉"}, "A4": {"v": "45728"}, "B4": {"v": "修改AX落地支架部分错误，表格版本V1.2-20250312"}, "C4": {"v": "杜辉"}, "A5": {"v": "45731"}, "B5": {"v": "更新FL落地支架部分物料，表格版本V1.3-20250315"}, "C5": {"v": "杜辉"}, "A6": {"v": "45743"}, "B6": {"v": "新增CPS系列壁挂架计算工具、钢结构计算工具（数据来源产品线）"}, "C6": {"v": "杜辉"}, "B7": {"v": "表格命名修改为：结构配件速算表V1.4-20250327"}, "C7": {"v": "杜辉"}, "A8": {"v": "45796"}, "B8": {"v": "新增XL系列背条计算公式"}, "C8": {"v": "杜辉"}, "B9": {"v": "新增NX系列新背条计算公式，表格版本V1.5-20250519"}, "C9": {"v": "杜辉"}, "A10": {"v": "45797"}, "B10": {"v": "新增PL NT 系列落地支架安装示意图（供参考）"}, "C10": {"v": "杜辉"}, "B11": {"v": "新增XL NX 系列壁挂架安装示意图（供参考）"}, "C11": {"v": "杜辉"}, "A12": {"v": "45813"}, "B12": {"v": "新增KLCOB V2系列背条计算公式"}, "C12": {"v": "杜辉"}, "A13": {"v": "45825"}, "B13": {"v": "新增SA落地支架计算公式"}, "C13": {"v": "杜辉"}, "A14": {"v": "45827"}, "B14": {"v": "修正了SA落地支架计算公式"}, "C14": {"v": "杜辉"}, "A15": {"v": "45842"}, "B15": {"v": "修正AX落地支架公式错误"}, "C15": {"v": "杜辉"}, "A16": {"v": "45856"}, "B16": {"v": "更新KLCOB V2背条（2IN1）物料"}, "C16": {"v": "杜辉"}, "A17": {"v": "45861"}, "B17": {"v": "新增FL V2落地支架计算公式-还未正式发布"}, "C17": {"v": "杜辉"}, "B18": {"v": "新增K V3背条计算公式"}, "C18": {"v": "杜辉"}, "A19": {"v": "45869"}, "B19": {"v": "更新XL和KLCOB V2和NX 角码和墙壁固定螺丝"}, "C19": {"v": "杜辉"}, "A20": {"v": "45875"}, "B20": {"v": "完善FL V2落地支架计算公式"}, "C20": {"v": "杜辉"}, "B21": {"v": "新增NT V2落地支架计算公式-还未正式发布"}, "C21": {"v": "杜辉"}, "A22": {"v": "45876"}, "B22": {"v": "新做NT V2落地支架对应航空箱物料和计算公式-林泽锋提供"}, "C22": {"v": "杜辉"}, "A23": {"v": "45877"}, "B23": {"v": "新增K V3-2025A包边计算公式"}, "C23": {"v": "杜辉"}, "B24": {"v": "新增KLCOB V2包边计算公式"}, "C24": {"v": "杜辉"}, "B25": {"v": "新增XL包边计算公式"}, "C25": {"v": "杜辉"}, "A26": {"v": "45894"}, "B26": {"v": "修正K V3包边物料"}, "C26": {"v": "杜辉"}, "A27": {"v": "45901"}, "B27": {"v": "新增NX包边计算公式"}, "C27": {"v": "杜辉"}, "A28": {"v": "45909"}, "B28": {"v": "修改K V3-2025A版本为K V3-V3X版本"}, "C28": {"v": "杜辉"}, "A29": {"v": "45912"}, "B29": {"v": "增加PR落地支架航空箱物料--可以通用PL落地支架旧款航空箱"}, "C29": {"v": "杜辉"}, "B30": {"v": "修正PR落地支架一处错误，删除0.5米梯形支架物料，只需要用到0.4米梯形架"}, "C30": {"v": "杜辉"}, "A31": {"v": "45939"}, "B31": {"v": "修正KLCOB V2包边组件部分错误"}, "C31": {"v": "杜辉"}, "A32": {"v": "45945"}, "B32": {"v": "更新SA系列底座物料"}, "C32": {"v": "杜辉"}, "A33": {"v": "45973"}, "B33": {"v": "增加K V3背条安装工具物料"}, "C33": {"v": "杜辉"}, "A34": {"v": "45974"}, "B34": {"v": "修正K V3背条安装示意图挂钩位置"}, "C34": {"v": "杜辉"}, "A35": {"v": "45981"}, "B35": {"v": "新增PL V3系列落地支架计算公式"}, "C35": {"v": "杜辉"}, "A36": {"v": "45989"}, "B36": {"v": "将表格中的部件重量信息补充完整"}, "C36": {"v": "杜辉"}, "A37": {"v": "45993"}, "B37": {"v": "更新NT V2新款落地支架底座料号（兼容NT V2底座料号）"}, "C37": {"v": "杜辉"}, "A38": {"v": "46014"}, "B38": {"v": "修正SA落地支架小错误"}, "C38": {"v": "杜辉"}, "A39": {"v": "46026"}, "B39": {"v": "补充说明NX包边配合单双倍挂架或者新背条均可"}, "C39": {"v": "杜辉"}, "A40": {"v": "46027"}, "B40": {"v": "更新SA长短箱体底座物料"}, "C40": {"v": "杜辉"}, "A41": {"v": "46029"}, "B41": {"v": "新增K plus背条计算公式"}, "C41": {"v": "杜辉"}, "A42": {"v": "46052"}, "B42": {"v": "FL V2落地支架暂停使用，底座和支撑座待确认"}, "C42": {"v": "杜辉"}, "A43": {"v": "46113"}, "B43": {"v": "更新FL V2地梁和落地架底座物料"}, "C43": {"v": "杜辉"}, "A44": {"v": "46129"}, "B44": {"v": "补充PDF格式安装示意图（供参考）"}, "C44": {"v": "杜辉"}, "B45": {"v": "新增NT V2系列落地支架安装示意图（新款落地支架）（供参考）"}, "C45": {"v": "杜辉"}, "A46": {"v": "46140"}, "B46": {"v": "新增ALT系列挂架+包边计算公式"}, "C46": {"v": "杜辉"}, "A47": {"v": "46157"}, "B47": {"v": "更新NX系列背条安装示意图（供参考）"}, "C47": {"v": "杜辉"}, "B48": {"v": "更新KLCOB V2系列背条安装示意图，加入二合一和三合一小箱体"}, "C48": {"v": "杜辉"}, "A49": {"v": "46164"}, "B49": {"v": "增加CL V3包边物料（注意：CL V3包边方案下单前，需要和产品线进行沟通确认）"}, "C49": {"v": "杜辉"}, "A50": {"v": "46170"}, "B50": {"v": "修正CL V3包边计算公式部分错误"}, "C50": {"v": "杜辉"}, "A51": {"v": "46176"}, "B51": {"v": "新增KLCOB V2挂架+包边计算公式"}, "C51": {"v": "杜辉"}, "B52": {"v": "新增CL V3挂架+包边计算公式"}, "C52": {"v": "杜辉"}, "A53": {"v": "46177"}, "B53": {"v": "调整NT V2系列新款落地支架-梯形架对应航空箱数量计算公式"}, "C53": {"v": "杜辉"}, "B54": {"v": "新增NT旧款落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C54": {"v": "杜辉"}, "B55": {"v": "新增PL旧款落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C55": {"v": "杜辉"}, "B56": {"v": "新增PL V3落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C56": {"v": "杜辉"}, "B57": {"v": "新增PR落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C57": {"v": "杜辉"}, "B58": {"v": "新增SA落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C58": {"v": "杜辉"}, "A59": {"v": "46189"}, "B59": {"v": "新增AW V2挂架计算公式"}, "C59": {"v": "杜辉"}, "A60": {"v": "46213"}, "B60": {"v": "新增M54挂架+包边计算公式"}, "C60": {"v": "杜辉"}, "A61": {"v": "46214"}, "B61": {"v": "新增KLCOB V3背条+包边计算公式"}, "C61": {"v": "杜辉"}, "A62": {"v": "46227"}, "B62": {"v": "补充AW V2-500*750挂架计算公式"}, "C62": {"v": "杜辉"}, "A63": {"v": "46231"}, "B63": {"v": "新增KLCOB背条+包边计算公式"}, "C63": {"v": "杜辉"}, "B64": {"v": "新增KLCOB挂架+包边计算公式"}, "C64": {"v": "杜辉"}, "B65": {"v": "新增KLCOB V3挂架+包边计算公式"}, "C65": {"v": "杜辉"}, "A66": {"v": "46233"}, "B66": {"v": "补充KLCOB V3挂架和背条安装示意图（供参考）"}, "C66": {"v": "杜辉"}, "B67": {"v": "更新AW V2安装示意图，增加500*750尺寸挂架（供参考）"}, "C67": {"v": "杜辉"}, "B68": {"v": "增加AW V2 500*750尺寸挂架重量，修正AW V2挂钉重量错误"}, "C68": {"v": "杜辉"}, "A69": {"v": "46234"}, "B69": {"v": "补充KLCOB C04版本挂架和背条安装示意图（供参考）"}, "C69": {"v": "杜辉"}, "A70": {"v": "46248"}, "B70": {"v": "KLCOB V3和CL V3包边增加注释：标准是按包背条设计的，壁挂架厚度要厚一些，包不全;如果需要全包需要走非标定制包边;"}, "C70": {"v": "杜辉"}, "A71": {"v": "46249"}, "B71": {"v": "更新KLCOB V2安装示意图(侧视图标注尺寸更新)"}, "C71": {"v": "杜辉"}, "B72": {"v": "更新KLCOB C04安装示意图(侧视图标注尺寸更新)"}, "C72": {"v": "杜辉"}, "A73": {"v": "46252"}, "B73": {"v": "K V3背条示意图更新（原箱体图纸背部孔位有微调，其他不变）"}, "C73": {"v": "杜辉"}};
+const UPDATE_LOG = {"A1": {"v": "日  期"}, "B1": {"v": "修   订   内   容"}, "C1": {"v": "编辑人"}, "A2": {"v": "45709"}, "B2": {"v": "输出首版落地支架速算表（国际SR使用）V1.0"}, "C2": {"v": "杜辉"}, "A3": {"v": "45723"}, "B3": {"v": "计算公式新增对长箱体的支持，表格版本V1.1-20250307"}, "C3": {"v": "杜辉"}, "A4": {"v": "45728"}, "B4": {"v": "修改AX落地支架部分错误，表格版本V1.2-20250312"}, "C4": {"v": "杜辉"}, "A5": {"v": "45731"}, "B5": {"v": "更新FL落地支架部分物料，表格版本V1.3-20250315"}, "C5": {"v": "杜辉"}, "A6": {"v": "45743"}, "B6": {"v": "新增CPS系列壁挂架计算工具、钢结构计算工具（数据来源产品线）"}, "C6": {"v": "杜辉"}, "A7": {"v": "45736"}, "B7": {"v": "表格命名修改为：结构配件速算表V1.4-20250327"}, "C7": {"v": "杜辉"}, "A8": {"v": "45796"}, "B8": {"v": "新增XL系列背条计算公式"}, "C8": {"v": "杜辉"}, "A9": {"v": "45796"}, "B9": {"v": "新增NX系列新背条计算公式，表格版本V1.5-20250519"}, "C9": {"v": "杜辉"}, "A10": {"v": "45797"}, "B10": {"v": "新增PL NT 系列落地支架安装示意图（供参考）"}, "C10": {"v": "杜辉"}, "B11": {"v": "新增XL NX 系列壁挂架安装示意图（供参考）"}, "C11": {"v": "杜辉"}, "A12": {"v": "45813"}, "B12": {"v": "新增KLCOB V2系列背条计算公式"}, "C12": {"v": "杜辉"}, "A13": {"v": "45825"}, "B13": {"v": "新增SA落地支架计算公式"}, "C13": {"v": "杜辉"}, "A14": {"v": "45827"}, "B14": {"v": "修正了SA落地支架计算公式"}, "C14": {"v": "杜辉"}, "A15": {"v": "45842"}, "B15": {"v": "修正AX落地支架公式错误"}, "C15": {"v": "杜辉"}, "A16": {"v": "45856"}, "B16": {"v": "更新KLCOB V2背条（2IN1）物料"}, "C16": {"v": "杜辉"}, "A17": {"v": "45861"}, "B17": {"v": "新增FL V2落地支架计算公式-还未正式发布"}, "C17": {"v": "杜辉"}, "B18": {"v": "新增K V3背条计算公式"}, "C18": {"v": "杜辉"}, "A19": {"v": "45869"}, "B19": {"v": "更新XL和KLCOB V2和NX 角码和墙壁固定螺丝"}, "C19": {"v": "杜辉"}, "A20": {"v": "45875"}, "B20": {"v": "完善FL V2落地支架计算公式"}, "C20": {"v": "杜辉"}, "B21": {"v": "新增NT V2落地支架计算公式-还未正式发布"}, "C21": {"v": "杜辉"}, "A22": {"v": "45876"}, "B22": {"v": "新做NT V2落地支架对应航空箱物料和计算公式-林泽锋提供"}, "C22": {"v": "杜辉"}, "A23": {"v": "45877"}, "B23": {"v": "新增K V3-2025A包边计算公式"}, "C23": {"v": "杜辉"}, "B24": {"v": "新增KLCOB V2包边计算公式"}, "C24": {"v": "杜辉"}, "B25": {"v": "新增XL包边计算公式"}, "C25": {"v": "杜辉"}, "A26": {"v": "45894"}, "B26": {"v": "修正K V3包边物料"}, "C26": {"v": "杜辉"}, "A27": {"v": "45901"}, "B27": {"v": "新增NX包边计算公式"}, "C27": {"v": "杜辉"}, "A28": {"v": "45909"}, "B28": {"v": "修改K V3-2025A版本为K V3-V3X版本"}, "C28": {"v": "杜辉"}, "A29": {"v": "45912"}, "B29": {"v": "增加PR落地支架航空箱物料--可以通用PL落地支架旧款航空箱"}, "C29": {"v": "杜辉"}, "B30": {"v": "修正PR落地支架一处错误，删除0.5米梯形支架物料，只需要用到0.4米梯形架"}, "C30": {"v": "杜辉"}, "A31": {"v": "45939"}, "B31": {"v": "修正KLCOB V2包边组件部分错误"}, "C31": {"v": "杜辉"}, "A32": {"v": "45945"}, "B32": {"v": "更新SA系列底座物料"}, "C32": {"v": "杜辉"}, "A33": {"v": "45973"}, "B33": {"v": "增加K V3背条安装工具物料"}, "C33": {"v": "杜辉"}, "A34": {"v": "45974"}, "B34": {"v": "修正K V3背条安装示意图挂钩位置"}, "C34": {"v": "杜辉"}, "A35": {"v": "45981"}, "B35": {"v": "新增PL V3系列落地支架计算公式"}, "C35": {"v": "杜辉"}, "A36": {"v": "45989"}, "B36": {"v": "将表格中的部件重量信息补充完整"}, "C36": {"v": "杜辉"}, "A37": {"v": "45993"}, "B37": {"v": "更新NT V2新款落地支架底座料号（兼容NT V2底座料号）"}, "C37": {"v": "杜辉"}, "A38": {"v": "46014"}, "B38": {"v": "修正SA落地支架小错误"}, "C38": {"v": "杜辉"}, "A39": {"v": "46026"}, "B39": {"v": "补充说明NX包边配合单双倍挂架或者新背条均可"}, "C39": {"v": "杜辉"}, "A40": {"v": "46027"}, "B40": {"v": "更新SA长短箱体底座物料"}, "C40": {"v": "杜辉"}, "A41": {"v": "46029"}, "B41": {"v": "新增K plus背条计算公式"}, "C41": {"v": "杜辉"}, "A42": {"v": "46052"}, "B42": {"v": "FL V2落地支架暂停使用，底座和支撑座待确认"}, "C42": {"v": "杜辉"}, "A43": {"v": "46113"}, "B43": {"v": "更新FL V2地梁和落地架底座物料"}, "C43": {"v": "杜辉"}, "A44": {"v": "46129"}, "B44": {"v": "补充PDF格式安装示意图（供参考）"}, "C44": {"v": "杜辉"}, "B45": {"v": "新增NT V2系列落地支架安装示意图（新款落地支架）（供参考）"}, "C45": {"v": "杜辉"}, "A46": {"v": "46140"}, "B46": {"v": "新增ALT系列挂架+包边计算公式"}, "C46": {"v": "杜辉"}, "A47": {"v": "46157"}, "B47": {"v": "更新NX系列背条安装示意图（供参考）"}, "C47": {"v": "杜辉"}, "B48": {"v": "更新KLCOB V2系列背条安装示意图，加入二合一和三合一小箱体"}, "C48": {"v": "杜辉"}, "A49": {"v": "46164"}, "B49": {"v": "增加CL V3包边物料（注意：CL V3包边方案下单前，需要和产品线进行沟通确认）"}, "C49": {"v": "杜辉"}, "A50": {"v": "46170"}, "B50": {"v": "修正CL V3包边计算公式部分错误"}, "C50": {"v": "杜辉"}, "A51": {"v": "46176"}, "B51": {"v": "新增KLCOB V2挂架+包边计算公式"}, "C51": {"v": "杜辉"}, "B52": {"v": "新增CL V3挂架+包边计算公式"}, "C52": {"v": "杜辉"}, "A53": {"v": "46177"}, "B53": {"v": "调整NT V2系列新款落地支架-梯形架对应航空箱数量计算公式"}, "C53": {"v": "杜辉"}, "B54": {"v": "新增NT旧款落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C54": {"v": "杜辉"}, "B55": {"v": "新增PL旧款落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C55": {"v": "杜辉"}, "B56": {"v": "新增PL V3落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C56": {"v": "杜辉"}, "B57": {"v": "新增PR落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C57": {"v": "杜辉"}, "B58": {"v": "新增SA落地支架搭配新款航空箱使用时，新款航空箱数量计算公式"}, "C58": {"v": "杜辉"}, "A59": {"v": "46189"}, "B59": {"v": "新增AW V2挂架计算公式"}, "C59": {"v": "杜辉"}, "A60": {"v": "46213"}, "B60": {"v": "新增M54挂架+包边计算公式"}, "C60": {"v": "杜辉"}, "A61": {"v": "46214"}, "B61": {"v": "新增KLCOB V3背条+包边计算公式"}, "C61": {"v": "杜辉"}, "A62": {"v": "46227"}, "B62": {"v": "补充AW V2-500*750挂架计算公式"}, "C62": {"v": "杜辉"}, "A63": {"v": "46231"}, "B63": {"v": "新增KLCOB背条+包边计算公式"}, "C63": {"v": "杜辉"}, "B64": {"v": "新增KLCOB挂架+包边计算公式"}, "C64": {"v": "杜辉"}, "B65": {"v": "新增KLCOB V3挂架+包边计算公式"}, "C65": {"v": "杜辉"}, "A66": {"v": "46233"}, "B66": {"v": "补充KLCOB V3挂架和背条安装示意图（供参考）"}, "C66": {"v": "杜辉"}, "B67": {"v": "更新AW V2安装示意图，增加500*750尺寸挂架（供参考）"}, "C67": {"v": "杜辉"}, "B68": {"v": "增加AW V2 500*750尺寸挂架重量，修正AW V2挂钉重量错误"}, "C68": {"v": "杜辉"}, "A69": {"v": "46234"}, "B69": {"v": "补充KLCOB C04版本挂架和背条安装示意图（供参考）"}, "C69": {"v": "杜辉"}, "A70": {"v": "46248"}, "B70": {"v": "KLCOB V3和CL V3包边增加注释：标准是按包背条设计的，壁挂架厚度要厚一些，包不全;如果需要全包需要走非标定制包边;"}, "C70": {"v": "杜辉"}, "A71": {"v": "46249"}, "B71": {"v": "更新KLCOB V2安装示意图(侧视图标注尺寸更新)"}, "C71": {"v": "杜辉"}, "B72": {"v": "更新KLCOB C04安装示意图(侧视图标注尺寸更新)"}, "C72": {"v": "杜辉"}, "A73": {"v": "46252"}, "B73": {"v": "K V3背条示意图更新（原箱体图纸背部孔位有微调，其他不变）"}, "C73": {"v": "杜辉"}};
 
 // Excel日期序列号转日期
 function excelDateToDate(serial){
