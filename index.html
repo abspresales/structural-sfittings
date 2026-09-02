@@ -620,7 +620,15 @@ function closeAdminModal(){
 // 导出JSON数据
 function exportDataJson(){
   try{
-    const data={ALL_DATA:ALL_DATA,INPUT_MAP:INPUT_MAP,MERGE_MAP:MERGE_MAP,ATTACHMENTS:ATTACHMENTS||{}};
+    // 合并已确认的附件与本次临时上传但尚未点"保存"的附件（pendingAttachments），
+    // 保证"上传图纸后直接点导出JSON"也能把图纸映射正确写入 json，避免导出空 ATTACHMENTS。
+    const mergedAttachments = JSON.parse(JSON.stringify(ATTACHMENTS || {}));
+    if(pendingAttachments){
+      Object.keys(pendingAttachments).forEach(sheetName => {
+        mergedAttachments[sheetName] = JSON.parse(JSON.stringify(pendingAttachments[sheetName]));
+      });
+    }
+    const data={ALL_DATA:ALL_DATA,INPUT_MAP:INPUT_MAP,MERGE_MAP:MERGE_MAP,ATTACHMENTS:mergedAttachments};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
