@@ -91,10 +91,10 @@ table.data-table{table-layout:fixed}
 /* SAP料号列不允许换行：由 JS 给 SAP 料号列单元格加 .col-sap 类，
    white-space:nowrap 保证17位料号单行显示，不折断成多行；列宽由 colgroup 保证 ≥135px 放得下单行。 */
 table.data-table .col-sap{white-space:nowrap}
-/* SAP料号点击复制：手型光标 + 悬停高亮 + 已复制绿闪反馈 */
+/* SAP料号点击复制：手型光标 + 悬停高亮 + 已复制仅变文字颜色（背景不变，靠"✓已复制"文字提醒） */
 .sap-copy-cell{cursor:pointer;position:relative;border-radius:3px;transition:background .18s ease,color .18s ease}
 .sap-copy-cell:hover{background:#e8f4fd;color:#1a6fb5}
-.sap-copy-cell.copied{background:#d9f7e6!important;color:#1a7f37!important;transition:background .15s ease,color .15s ease}
+.sap-copy-cell.copied{background:transparent!important;color:#1a7f37!important;transition:color .15s ease}
 .sap-copy-cell.copied::after{content:"✓已复制";font-size:10px;color:#1a7f37;margin-left:6px;white-space:nowrap;animation:copiedFade 1.2s ease forwards}
 @keyframes copiedFade{0%{opacity:0}15%{opacity:1}80%{opacity:1}100%{opacity:0}}
 /* 重量列明细（含KG，如"≈7.2KG"）禁止换行，靠列宽保证单行；由 JS 对内容以KG结尾的单元格加 .w-nowrap */
@@ -133,11 +133,20 @@ table.data-table td.col-merge{vertical-align:middle;text-align:center}
 .note-row td{background:#fafafa;color:#666;font-size:11px;font-style:italic}
 .empty-state{padding:40px;text-align:center;color:#999}
 .footer{text-align:center;padding:16px;color:#999;font-size:11px}
-input[type=number]{width:100%;max-width:72px;min-width:44px;box-sizing:border-box;padding:4px 6px;border:1px solid #faad14;border-radius:3px;font-size:13px;background:#fff;text-align:center;vertical-align:middle;display:inline-block}
+input[type=number]{width:100%;max-width:112px;min-width:48px;box-sizing:border-box;padding:4px 5px;border:1px solid #faad14;border-radius:3px;font-size:13px;background:#fff;text-align:center;vertical-align:middle;display:inline-block;-moz-appearance:textfield;appearance:textfield}
+/* 隐藏 number 输入框的上下箭头(spinner)，把空间留给数字本身，避免窄列下多位数字被裁切 */
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 /* 输入框所在单元格：给足最小宽度，保证任何视口下输入框居中对齐、不溢出 */
-table.data-table td:has(input[type=number]){min-width:60px;text-align:center!important;vertical-align:middle}
+table.data-table td:has(input[type=number]){min-width:56px;text-align:center!important;vertical-align:middle}
+
+/* 功能6：计算结果高亮反馈 —— 公式值发生变化时短暂闪烁绿色，让用户看到本次输入影响了哪些结果 */
+@keyframes flashUpdate{0%{background:#d9f7e6;color:#1a7f37}70%{background:#d9f7e6;color:#1a7f37}100%{background:transparent;color:inherit}}
+td[data-formula-ref].flash-update{animation:flashUpdate 1.15s ease forwards;border-radius:3px}
 
 /* 右下角圆形齿轮按钮 */
+.fab-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:10px;z-index:999}
+.fab-btn{width:26px;height:26px;border-radius:50%;background:#1a3a5c;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);transition:all 0.2s;font-size:13px}
+.fab-btn:hover{filter:brightness(1.15);transform:scale(1.05)}
 .fab-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:10px;z-index:999}
 .fab-btn{width:26px;height:26px;border-radius:50%;background:#1a3a5c;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);transition:all 0.2s;font-size:13px}
 .fab-btn:hover{filter:brightness(1.15);transform:scale(1.05)}
@@ -264,6 +273,7 @@ html,body{overflow-x:hidden;width:100%}
 <script>
 // ========== 后台维护 - Excel导入更新 ==========
 let pendingUpdate = null; // 待保存的更新数据
+let rawFileBytes = null;  // 缓存上传的源Excel原始字节，导出时在XML层直接改值，100%保留源文件的原格式（列宽/行高/字体/边框/背景/合并）
 
 // 拖拽上传
 document.addEventListener('DOMContentLoaded', function(){
@@ -328,6 +338,8 @@ const ext = file.name.split('.').pop().toLowerCase();
         const data = new Uint8Array(e.target.result);
         // cellStyles:true 才能读到单元格背景色（如输入框黄色 FFC000/FFFFC000），否则 cell.s 为空、输入框识别失效
         const workbook = XLSX.read(data, {type:'array', cellStyles:true});
+        // 缓存原始字节（导出时直接用它在XML层改值，从而100%复刻源文件的原始排版格式）
+        rawFileBytes = new Uint8Array(e.target.result);
         parseAndCompare(workbook);
       }catch(err){
         console.error('解析Excel错误:', err);
@@ -747,7 +759,8 @@ function updateAttachmentDisplay(){
 
 
 </script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
 window.onerror = function(msg, url, line, col, error) {
   document.body.innerHTML = '<div style="padding:20px;font-family:monospace;"><h2>JavaScript错误</h2><p><b>消息:</b> ' + msg + '</p><p><b>行:</b> ' + line + '</p><p><b>列:</b> ' + col + '</p><p><b>错误:</b> ' + (error ? error.stack : '无') + '</p></div>' + document.body.innerHTML;
@@ -1078,7 +1091,7 @@ function evalExcelFormula(formula, values){
   }
 }
 
-function recalculateFormulas(){
+function recalculateFormulas(flash){
   const sheetData = ALL_DATA[currentSheet];
   if(!sheetData) return;
   
@@ -1113,10 +1126,20 @@ function recalculateFormulas(){
     if(!changed) break;
   }
   
+  // 功能6：对值发生变化的公式单元格做短暂高亮，让用户一眼看到哪些结果被本次输入影响了。
+  // flash 参数默认为 false（首屏/切换 sheet 不闪），仅在用户交互(输入/预设/重置)时传 true。
   document.querySelectorAll('td[data-formula-ref]').forEach(td => {
     const ref = td.getAttribute('data-formula-ref');
     if(values[ref] !== undefined){
-      td.textContent = values[ref];
+      const before = td.textContent;
+      const after = String(values[ref]);
+      if(flash && before !== after && after !== ''){
+        // 移除历史高亮并重新触发，确保连续输入也能每次闪烁
+        td.classList.remove('flash-update');
+        void td.offsetWidth;
+        td.classList.add('flash-update');
+      }
+      td.textContent = after;
     }
   });
 }
@@ -1126,7 +1149,8 @@ function resetSheetInput(){
   document.querySelectorAll('#tableContainer input[data-ref]').forEach(input => {
     input.value = 0;
   });
-  recalculateFormulas();
+  recalculateFormulas(true);
+  saveSheetInputs();
 }
 // 方案A：重置「某一箱体行」的输入框（只清空该行宽度/高度），其他行不受影响
 function resetRowInput(row){
@@ -1134,8 +1158,44 @@ function resetRowInput(row){
     const m = (input.dataset.ref||'').match(/[A-Z]+(\d+)/);
     if(m && parseInt(m[1],10) === row){ input.value = 0; }
   });
-  recalculateFormulas();
+  recalculateFormulas(true);
+  saveSheetInputs();
 }
+
+// ========== 功能4：输入状态自动保存（localStorage） ==========
+// 所有 sheet 的输入值统一存在一个 localStorage key 下：{ "<sheet>": {"<ref>": value, ...}, ... }
+// 这样刷新/切换 sheet 后自动恢复，不用重算。
+const INPUT_STORE_KEY = 'sf_inputs_v1';
+function readInputStore(){
+  try{ return JSON.parse(localStorage.getItem(INPUT_STORE_KEY)) || {}; }catch(e){ return {}; }
+}
+// 读取某 sheet 某 ref 的保存值；无则返回 null
+function getSavedInput(sheet, ref){
+  const store = readInputStore();
+  return (store[sheet] && store[sheet][ref] !== undefined) ? store[sheet][ref] : null;
+}
+// 把当前 sheet 所有输入框的值写入 localStorage
+function saveSheetInputs(){
+  const sheet = currentSheet;
+  const store = readInputStore();
+  const obj = {};
+  document.querySelectorAll('#tableContainer input[data-ref]').forEach(function(input){
+    const ref = input.getAttribute('data-ref');
+    if(ref && input.value !== '') obj[ref] = input.value;
+  });
+  store[sheet] = obj;
+  // 若所有输入都是空，删除该 sheet 以保持存储精简
+  const hasAny = Object.keys(obj).length > 0;
+  if(!hasAny) delete store[sheet];
+  try{ localStorage.setItem(INPUT_STORE_KEY, JSON.stringify(store)); }catch(e){}
+}
+// 清除某 sheet 的保存输入（重置全部 / 数据版本变化时用）
+function clearSavedInputs(sheet){
+  const store = readInputStore();
+  delete store[sheet];
+  try{ localStorage.setItem(INPUT_STORE_KEY, JSON.stringify(store)); }catch(e){}
+}
+
 // 点击复制SAP料号：复制该单元格的料号文本到剪贴板，并短暂显示"已复制"反馈
 function copySAP(el){
   const txt = (el.getAttribute('data-sap') || el.textContent || '').trim();
@@ -2030,9 +2090,12 @@ function renderTable(){
         // 宽度/高度列(含大箱体宽度/小箱体宽度/箱体高度等)的初始值设为5，其余输入框初始值=0。
         // 判定依据：该输入框所在列表头是否含 宽度/高度 语义关键词。
         const whHdr = findColHeader(col, rNum);
-        const initVal = /宽度|高度|Width|Height/.test(whHdr) ? 5 : 0;
-        html += '<td class="'+tdClass+'"'+mergeAttr+excelAlignStyle+'><input type="number" min="0" value="'+initVal+'" data-ref="'+ref+'" oninput="recalculateFormulas()"></td>';
-        // 方案G：不在每行放按钮；改为在输入区底部单独一行放置「重置全部」（见行末追加逻辑）。
+        const isHeight = /高度|Height/.test(whHdr);
+        const isWidth = /宽度|Width/.test(whHdr);
+        // 功能4：优先恢复用户已保存的输入值（localStorage），无保存才用默认初始值。
+        const savedVal = getSavedInput(currentSheet, ref);
+        const initVal = (savedVal !== null && savedVal !== undefined) ? savedVal : (isWidth || isHeight) ? 5 : 0;
+        html += '<td class="'+tdClass+'"'+mergeAttr+excelAlignStyle+'><input type="number" min="0" value="'+initVal+'" data-ref="'+ref+'" oninput="recalculateFormulas(true);saveSheetInputs();"></td>';
         continue;
       }
       
@@ -2407,42 +2470,389 @@ function alignFirstColsAcrossTables(container){
   struct.forEach(function(t){ applyLogicalWidths(t, seq2, otherReserve); });
 }
 
-function exportExcel(){
-  // 简单的CSV导出
-  const sheetData = ALL_DATA[currentSheet] || {};
-  const inputs = INPUT_MAP[currentSheet] || [];
-  
-  let maxRow = 0;
-  let maxCol = 9;
-  for(const ref in sheetData){
-    const m = ref.match(/([A-Z]+)(\d+)/);
-    if(m){
-      const row = parseInt(m[2]);
-      if(row > maxRow) maxRow = row;
+// 把一张渲染后的 table.data-table 转成二维单元格数组（含列对齐），用于导出。
+// 处理：跳过"重置"列(.reset-col-cell)、按 colspan/rowspan 占位并把合并单元格的文字只保留在锚点(首个占据格)、
+//       其余跨列/跨行位置留空，避免导出后"同一段文字重复显示在多列"。
+// 同时返回横向/纵向合并范围 merges（供导出时设置 !merges，让Excel正确跨列显示一次）。
+// 返回 { grid:[[{v,align}...]], merges:[{r,c,cs,rs}...] }（r/c 为表内0-indexed）。
+function tableToCells(table){
+  var headerRow = getHeaderRowForTable(table);
+  // 表头行按 colspan 展开 → 每个真实物理列的对齐
+  var colAligns = []; // colAligns[col] = 'left'|'center'|''（''表示保留默认）
+  if(headerRow){
+    var pos = 0;
+    Array.prototype.forEach.call(headerRow.children, function(h){
+      if(h.classList && h.classList.contains('reset-col-cell')) return; // 跳过重置列表头
+      var cs = parseInt(h.getAttribute('colspan'))||1;
+      var align = colAlignFromHeader((h.textContent||'').trim());
+      for(var k=0;k<cs;k++){ colAligns[pos++] = align; }
+    });
+  }
+  var rows = Array.prototype.slice.call(table.rows);
+  var grid = [];        // 二维数组：grid[ri][ci] = {v, align}（未定义=空白）
+  var merges = [];      // 合并范围（0-indexed）
+  var colBlocked = [];  // colBlocked[realCol] = 该列剩余被上方rowspan占用的行数(不含当前行) —— rowspan感知
+  rows.forEach(function(tr, ri){
+    var rowArr = [];
+    var p = 0;          // 真实物理列位置（会跳过被上方rowspan占住的列）
+    Array.prototype.forEach.call(tr.children, function(td){
+      if(td.classList && td.classList.contains('reset-col-cell')) return; // 跳过重置列
+      // 前进到第一个未被上方rowspan占用的列
+      var guard = 0;
+      while(colBlocked[p] && guard++ < 256){ p++; }
+      var cs = parseInt(td.getAttribute('colspan'))||1;
+      var rs = parseInt(td.getAttribute('rowspan'))||1;
+      // 若单元格内是按钮（重置↺），把值置空
+      var v = '';
+      var btn = td.querySelector('button');
+      if(!btn){
+        v = (td.innerText || td.textContent || '').replace(/\s+/g,' ').trim();
+      }
+      var align = colAligns[p] || '';
+      // xlsx-js-style 对齐默认 left；我们把 `''`(无明确)统一为 center，满足"物料描述/配置/逻辑列需要左对齐则左，其余居中"
+      var hAlign = (align === 'left') ? 'left' : 'center';
+      // 只把文字写进锚点(首个占据列)，其余跨列位置留空 → 不重复显示
+      rowArr[p] = { v: v, align: hAlign };
+      for(var k=1;k<cs;k++){ rowArr[p+k] = { v:'', align: hAlign }; }
+      if(cs > 1 || rs > 1){
+        merges.push({ r: ri, c: p, cs: cs, rs: rs });
+      }
+      // 登记本 td 覆盖列对后续行的 rowspan 占用
+      if(rs > 1){
+        for(var k=0;k<cs;k++){ colBlocked[p+k] = Math.max(colBlocked[p+k]||0, rs); }
+      }
+      p += cs;
+    });
+    // 该行处理完：所有被占列的剩余行数减1（下一行占用少1行）
+    for(var c=0;c<colBlocked.length;c++){ if(colBlocked[c]) colBlocked[c]--; }
+    grid.push(rowArr);
+  });
+  return { grid: grid, merges: merges };
+}
+
+// 收集当前工作表在屏幕上「实际显示的值」：输入框当前输入值 + 公式重算后显示值。
+// 导出时用它覆盖源Excel对应单元格，保证导出结果反映网页上当前的计算/输入结果。
+function collectCurrentSheetValues(){
+  const map = {};
+  document.querySelectorAll('#tableContainer input[data-ref]').forEach(function(inp){
+    const ref = inp.getAttribute('data-ref');
+    if(ref) map[ref] = inp.value;
+  });
+  document.querySelectorAll('#tableContainer td[data-formula-ref]').forEach(function(td){
+    const ref = td.getAttribute('data-formula-ref');
+    if(ref) map[ref] = (td.textContent || '').replace(/\s+/g, ' ').trim();
+  });
+  return map;
+}
+
+// 从源Excel的 xl/workbook.xml + xl/_rels/workbook.xml.rels 里，解析出「sheet名 → 工作表XML路径及rId」映射
+function parseSheetXmlMap(workbookXml, relsXml){
+  const map = {}; // name -> { rid, path(modify) }
+  const nameToRid = {};
+  const sheetRe = /<sheet[^>]*name="([^"]*)"[^>]*r:id="([^"]*)"[^>]*\/?>/g;
+  let m;
+  while((m = sheetRe.exec(workbookXml))){
+    const name = m[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'");
+    nameToRid[name] = m[2];
+  }
+  const relRe = /<Relationship[^>]*Id="([^"]*)"[^>]*Target="([^"]*)"[^>]*\/?>/g;
+  const ridPath = {};
+  while((m = relRe.exec(relsXml))){
+    ridPath[m[1]] = m[2];
+  }
+  for(const name in nameToRid){
+    const rid = nameToRid[name];
+    let path = ridPath[rid] || '';
+    // target 可能是相对 xl/ 的路径（如 worksheets/sheet2.xml）或以 / 开头，统一处理
+    if(path.indexOf('worksheets/') === 0) path = 'xl/' + path;
+    else if(path.indexOf('/xl/') === 0) path = path.slice(1);
+    else if(path.indexOf('xl/') !== 0 && path.charAt(0) === '/') path = path.slice(1);
+    map[name] = { rid: rid, path: path };
+  }
+  return map;
+}
+
+// 把当前工作表XML里指定单元格的 <v> 值替换为新值；返回新XML。仅处理不会破坏共享字符串索引的情况。
+function patchSheetValues(sheetXml, valuesMap){
+  let xml = sheetXml;
+  for(const ref in valuesMap){
+    const newVal = valuesMap[ref];
+    if(newVal === undefined || newVal === null || newVal === '') continue;
+    // 定位 <c r="REF" ...> ... </c> 块
+    const cellRe = new RegExp('(<c r="'+ref+'"[^>]*>)([\\s\\S]*?)(</c>)');
+    const cellMatch = xml.match(cellRe);
+    if(!cellMatch) continue;
+    const inner = cellMatch[2];
+    // 跳过共享字符串单元格（t="s"），其 <v> 是字符串索引，不能直接改数字，否则会破坏文本
+    if(/ t="s"/.test(cellMatch[1]) || / t='s'/.test(cellMatch[1])) continue;
+    // 公式单元格 <f>...</f><v>...</v>：保留公式，仅替换计算缓存值
+    if(/<f[\s>]/.test(inner)){
+      const hasV = /<v>[\s\S]*?<\/v>/.test(inner);
+      const newInner = hasV
+        ? inner.replace(/<v>[\s\S]*?<\/v>/, '<v>'+newVal+'</v>')
+        : inner.replace('</f>', '</f><v>'+newVal+'</v>');
+      xml = xml.replace(cellRe, cellMatch[1] + newInner + cellMatch[3]);
+    } else if(/<v>[\s\S]*?<\/v>/.test(inner)){
+      // 普通单元格：直接替换 <v> 内容
+      xml = xml.replace(cellRe, cellMatch[1] + inner.replace(/<v>[\s\S]*?<\/v>/, '<v>'+newVal+'</v>') + cellMatch[3]);
+    } else {
+      // 无 <v> 的单元格（如空格），追加 <v>
+      xml = xml.replace(cellRe, cellMatch[1] + inner + '<v>'+newVal+'</v>' + cellMatch[3]);
     }
   }
-  
-  let csv = '\uFEFF';
-  for(let r=1; r<=maxRow; r++){
-    const row = [];
-    for(let ci=1; ci<=maxCol; ci++){
-      const col = numToCol(ci);
-      const ref = col + r;
-      const c = sheetData[ref];
-      let v = c ? (c.v || '') : '';
-      v = String(v).replace(/\n/g, ' ').replace(/"/g, '""');
-      row.push('"'+v+'"');
+  return xml;
+}
+
+// 导出时对单元格列宽的「合理上限」。超出部分让文本折行，避免列宽被长文本撑到很宽、拖出很长横向滚动条。
+// 配合 wrapText 让长文本在列内换行（最多约3行），使 Excel 在 100% 页面比例下尽量完整显示、不用左右拖动。
+const EXPORT_MAX_COL_WCH = 30;
+const EXPORT_MIN_COL_WCH = 10;
+
+// 把工作表XML里 <cols><col width="X"> 的列宽 clamp 到上限（用户要合理布局，不让单列过宽，长文本靠 wrapText 换行）
+function capSheetColWidths(sheetXml, maxW){
+  // <col min max width customWidth ... />
+  return sheetXml.replace(/<col([^>]*?)width="([\d.]+)"([^>]*?)\/>/g, function(m, pre, w, post){
+    var n = parseFloat(w);
+    if(n > maxW) w = maxW;
+    return '<col' + pre + ' width="' + w + '"' + post + '/>';
+  });
+}
+
+// 强制 styles.xml 里所有 xf 的 alignment 开启 wrapText，让单元格内长文本可换行（而非溢出到相邻列）
+function forceWrapStyles(stylesXml){
+  return stylesXml.replace(/<alignment([^>]*?)\/?>/g, function(m, attrs){
+    // 已含 wrapText="1" 则不动
+    if(/wrapText="?(1|true)"?/i.test(attrs)) return m;
+    // 移除已有的 wrapText="0"，再统一追加 wrapText="1"
+    var a = attrs.replace(/wrapText="?(\d|true|false)"?/gi, '');
+    a = a.replace(/\/\s*$/, '').trim();
+    return '<alignment' + (a ? ' ' + a : '') + ' wrapText="1"/>';
+  });
+}
+
+// ========== 导出：在源Excel原始XML层改值（最高保真，复刻源文件排版） ==========
+// 直接把用户上传的源Excel「当前sheet」的指定单元格 <v> 值替换为网页当前值，
+// 其余（列宽/行高/字体/边框/背景/合并/打印设置等）保持源文件原样，做到几乎完全一致。
+// 同时把列宽 clamp 到合理上限、强制单元格 wrapText 换行，避免出现很长横向滚动条。
+// 返回生成的 {buf, sheetName}；失败返回 null（交由回退到DOM拼装）。
+async function exportPatchedSheetXml(curSheet){
+  if(!rawFileBytes) return null;
+  try{
+    const zip = await JSZip.loadAsync(rawFileBytes);
+    const workbookXml = await zip.file('xl/workbook.xml').async('string');
+    const relsXml = await zip.file('xl/_rels/workbook.xml.rels').async('string');
+    const sheetMap = parseSheetXmlMap(workbookXml, relsXml);
+
+    // 找到当前sheet对应的工作表XML路径
+    let targetPath = null, targetName = curSheet;
+    const t = (curSheet||'').trim();
+    for(const name in sheetMap){
+      if(name === curSheet || name.trim() === t){ targetPath = sheetMap[name].path; targetName = name; break; }
     }
-    csv += row.join(',') + '\n';
+    if(!targetPath) return null;
+
+    const sheetEntry = zip.file(targetPath);
+    if(!sheetEntry) return null;
+    let sheetXml = await sheetEntry.async('string');
+
+    // 收集当前屏幕值并补丁
+    const vals = collectCurrentSheetValues();
+    if(Object.keys(vals).length > 0) sheetXml = patchSheetValues(sheetXml, vals);
+
+    // 合理布局：列宽 clamp 到上限，避免超宽列拖出很长横向滚动条（长文本靠换行）
+    sheetXml = capSheetColWidths(sheetXml, EXPORT_MAX_COL_WCH);
+
+    // 新建一个仅含当前sheet的最小工作簿，把源里的 styles/sharedStrings/docProps 一起搬进去
+    // 素材：styles.xml、sharedStrings.xml、calcChain（可选）、docProps
+    async function getEntryBytes(path){
+      const e = zip.file(path);
+      return e ? await e.async('arraybuffer') : null;
+    }
+    let stylesBytes = await getEntryBytes('xl/styles.xml');
+    const sharedBytes = await getEntryBytes('xl/sharedStrings.xml');
+    const useShared = !!sharedBytes;
+    // 强制所有单元格 wrapText，长文本在列内换行
+    if(stylesBytes){
+      try{
+        const styleStr = forceWrapStyles(await new Blob([stylesBytes]).text());
+        stylesBytes = new TextEncoder().encode(styleStr).buffer;
+      }catch(e){ /* 样式改写失败则保留源样式 */ }
+    }
+
+    // 内容类型
+    const contentTypes =
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+        '<Default Extension="xml" ContentType="application/xml"/>' +
+        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+        '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+        (stylesBytes ? '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' : '') +
+        (useShared ? '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>' : '') +
+      '</Types>';
+
+    // 根 rels
+    const rootRels =
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+      '</Relationships>';
+
+    // workbook.xml（单sheet，使用源sheet名）
+    const sheetNameXml = targetName.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const wbXml =
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+        '<sheets><sheet name="'+sheetNameXml.slice(0,31)+'" sheetId="1" r:id="rId1"/></sheets>' +
+      '</workbook>';
+
+    // workbook rels
+    let wbRels =
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>';
+    let rid = 2;
+    if(stylesBytes){ wbRels += '<Relationship Id="rId'+rid+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'; rid++; }
+    if(useShared){ wbRels += '<Relationship Id="rId'+rid+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>'; rid++; }
+    wbRels += '</Relationships>';
+
+    // 组装新zip
+    const outZip = new JSZip();
+    outZip.file('[Content_Types].xml', contentTypes);
+    outZip.file('_rels/.rels', rootRels);
+    outZip.file('xl/workbook.xml', wbXml);
+    outZip.file('xl/_rels/workbook.xml.rels', wbRels);
+    outZip.file('xl/worksheets/sheet1.xml', sheetXml);
+    if(stylesBytes) outZip.file('xl/styles.xml', stylesBytes);
+    if(useShared) outZip.file('xl/sharedStrings.xml', sharedBytes);
+
+    const buf = await outZip.generateAsync({ type:'arraybuffer', compression:'DEFLATE' });
+    return { buf: new Uint8Array(buf), sheetName: targetName };
+  }catch(e){ console.error('复刻源格式导出失败：', e); return null; }
+}
+
+async function exportExcel(){
+  if(typeof XLSX === 'undefined'){ alert('导出库未加载，请检查网络连接'); return; }
+
+  // —— 优先：若已上传过源Excel，则在它的XML层直接改当前sheet的值，完整复刻源文件原始排版 ——
+  if(rawFileBytes){
+    const patched = await exportPatchedSheetXml(currentSheet);
+    if(patched && patched.buf){
+      const blob = new Blob([patched.buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (patched.sheetName || currentSheet || 'Sheet1').slice(0,31) + '.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      return;
+    }
   }
-  
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+
+  const container = document.getElementById('tableContainer');
+  const tables = container ? container.querySelectorAll('table.data-table') : [];
+
+  // 1) 遍历当前 sheet 渲染出的每张表，转成单元格块（逐表垂直拼接，表间空一行）
+  const aoa = [];      // 最终二维 cell 数组（含 cell.s 样式）
+  const merges = [];   // 合并范围（aoa 坐标系，0-indexed）：{s:{r,c}, e:{r,c}}
+  tables.forEach(function(table){
+    const res = tableToCells(table);
+    const grid = res.grid, tableMerges = res.merges;
+    // 跳过完全空白的表
+    const hasContent = grid.some(function(r){ return r.some(function(c){ return c && c.v !== ''; }); });
+    if(!hasContent) return;
+    const blankRowIdx = aoa.length; // 此表前的空行插入点（记录：表间空一行，该空行不参与merge）
+    aoa.push([]); // 表间空一行
+    grid.forEach(function(rowArr){
+      const row = [];
+      for(var i=0;i<rowArr.length;i++){
+        const c = rowArr[i] || { v:'', align:'center' };
+        row.push({
+          v: c.v || '',
+          t: 's',
+          s: {
+            font: { name:'Arial', sz:11 },
+            alignment: { horizontal: c.align || 'center', vertical:'center', wrapText: true }
+          }
+        });
+      }
+      aoa.push(row);
+    });
+    // 记录本表合并范围（映射到 aoa 整体坐标：空行已插，grid 从 blankRowIdx+1 开始）
+    const firstGridRow = blankRowIdx + 1;
+    tableMerges.forEach(function(mg){
+      merges.push({
+        s: { r: firstGridRow + mg.r, c: mg.c },
+        e: { r: firstGridRow + mg.r + mg.rs - 1, c: mg.c + mg.cs - 1 }
+      });
+    });
+  });
+  if(aoa.length === 0){ alert('当前工作表没有可导出的内容'); return; }
+
+  // 2) 生成 xlsx（xlsx-js-style 支持写样式），并按内容估算每列宽度（避免列间距被压缩）
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  // 合并单元格：让Excel跨列/跨行显示一次（与网上渲染一致），避免文字重复或挤在单格
+  if(merges.length > 0) ws['!merges'] = merges;
+  // 估算每列字符宽度：中文/全角≈2字符，英文/数字≈1字符；取该列所有单元格的最大宽度，加余量。
+  const colWch = [];
+  aoa.forEach(function(row){
+    for(var i=0;i<row.length;i++){
+      var c = row[i];
+      if(!c) continue;
+      var txt = String(c.v||'');
+      if(!txt) continue;
+      var w = 0;
+      for(var k=0;k<txt.length;k++){
+        var ch = txt.charCodeAt(k);
+        if(ch >= 0x4E00 && ch <= 0x9FFF) w += 2;          // CJK 基本区
+        else if(ch >= 0x3000 && ch <= 0x303F) w += 2;      // 全角标点
+        else if(ch >= 0xFF00 && ch <= 0xFFEF) w += 2;      // 全角字母/数字
+        else if(ch < 0x20) continue;                        // 控制符跳过
+        else w += 1;                                        // ASCII/半角
+      }
+      if(w > (colWch[i]||0)) colWch[i] = w;
+    }
+  });
+  // 设置 !cols：让每列宽度足够容纳最长内容「最多3行」→ 列宽 = 内容估算宽/3 + 余量，并限制在 [MIN,MAX]。
+  // 这样长文本在列内折行（最多约3行），列不会被撑到很宽；Excel 100% 页面比例下能尽量完整显示、不用左右拖动。
+  ws['!cols'] = colWch.map(function(w){
+    var target = Math.ceil((w || 0) / 3) + 2;    // 目标：最长内容占3行
+    if(target < EXPORT_MIN_COL_WCH) target = EXPORT_MIN_COL_WCH; // 最小列宽，避免过窄
+    if(target > EXPORT_MAX_COL_WCH) target = EXPORT_MAX_COL_WCH; // 合理上限，避免超宽列
+    return { wch: target };
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, (currentSheet||'Sheet1').slice(0,31));
+  let buf = XLSX.write(wb, { type:'array', bookType:'xlsx' });
+
+  // 3) 用 JSZip 改写 styles.xml 的字体：把 <name val="Arial"/> 替换为 <rFonts latin="Arial" ea="微软雅黑" cs="Arial"/>
+  //    实现「中文=微软雅黑、英文/数字=Arial」的双字体效果。
+  if(typeof JSZip !== 'undefined'){
+    try{
+      const zip = await JSZip.loadAsync(buf);
+      const styleFile = zip.file('xl/styles.xml');
+      if(styleFile){
+        let stylesXml = await styleFile.async('string');
+        stylesXml = stylesXml.replace(/<name val="Arial"\/>/g, '<rFonts latin="Arial" ea="微软雅黑" cs="Arial"/>');
+        zip.file('xl/styles.xml', stylesXml);
+        buf = await zip.generateAsync({ type:'arraybuffer', compression:'DEFLATE' });
+      }
+    }catch(e){ console.error('改写导出字体失败（仍导出默认字体）：', e); }
+  }
+
+  // 4) 触发下载
+  const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = currentSheet + '.csv';
+  a.download = currentSheet + '.xlsx';
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
 }
 
 // 初始化
