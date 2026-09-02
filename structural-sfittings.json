@@ -16458,6 +16458,146 @@
         "name": "NT2.6 V2-500X1000-12MX3M-落地支架安装.pdf",
         "url": "drawings/NT2.6 V2-500X1000-12MX3M-落地支架安装.pdf"
       }
+    },
+    "NX背条+包边配置": {
+      "dwg": {
+        "name": "NX Installation Diagram of Back Mounting Bracket 20260515.dwg",
+        "url": "drawings/NX Installation Diagram of Back Mounting Bracket 20260515.dwg"
+      },
+      "pdf": {
+        "name": "NX Installation Diagram of Back Mounting Bracket 20260515.pdf",
+        "url": "drawings/NX Installation Diagram of Back Mounting Bracket 20260515.pdf"
+      }
+    },
+    "AW V2挂架配置": {
+      "dwg": {
+        "name": "AW V2 Installation Diagram of Wall Mounting Bracket 20260730.dwg",
+        "url": "drawings/AW V2 Installation Diagram of Wall Mounting Bracket 20260730.dwg"
+      },
+      "pdf": {
+        "name": "AW V2 Installation Diagram of Wall Mounting Bracket 20260730.pdf",
+        "url": "drawings/AW V2 Installation Diagram of Wall Mounting Bracket 20260730.pdf"
+      }
+    },
+    "K PLUS背条配置": {
+      "dwg": {
+        "name": "K PLUS Installation Diagram of Back Channel 20260108.dwg",
+        "url": "drawings/K PLUS Installation Diagram of Back Channel 20260108.dwg"
+      },
+      "pdf": {
+        "name": "K PLUS Installation Diagram of Back Channel 20260108.pdf",
+        "url": "drawings/K PLUS Installation Diagram of Back Channel 20260108.pdf"
+      }
+    },
+    "K V3背条+包边配置": {
+      "dwg": {
+        "name": "K V3(V3X)-4X5- Installation Diagram of Back Channel 20260818.dwg",
+        "url": "drawings/K V3(V3X)-4X5- Installation Diagram of Back Channel 20260818.dwg"
+      },
+      "pdf": {
+        "name": "K V3(V3X)-4X5- Installation Diagram of Back Channel 20260818.pdf",
+        "url": "drawings/K V3(V3X)-4X5- Installation Diagram of Back Channel 20260818.pdf"
+      }
+    },
+    "ALT挂架+包边配置": {
+      "dwg": {
+        "name": "ALT Installation Diagram of Wall Mount Bracket20260428.dwg",
+        "url": "drawings/ALT Installation Diagram of Wall Mount Bracket20260428.dwg"
+      },
+      "pdf": {
+        "name": "ALT Installation Diagram of Wall Mount Bracket20260428.pdf",
+        "url": "drawings/ALT Installation Diagram of Wall Mount Bracket20260428.pdf"
+      }
+    },
+    "CL V3挂架+包边配置": {
+      "dwg": {
+        "name": "CL V3 Installation Diagram of Wall Mount Bracket 20260605.dwg",
+        "url": "drawings/CL V3 Installation Diagram of Wall Mount Bracket 20260605.dwg"
+      },
+      "pdf": {
+        "name": "CL V3 Installation Diagram of Wall Mount Bracket 20260605.pdf",
+        "url": "drawings/CL V3 Installation Diagram of Wall Mount Bracket 20260605.pdf"
+      }
+    },
+    "CL V3背条+包边配置": {
+      "dwg": {
+        "name": "CL V3 Installation Diagram of Back Mounting Bracket 20260311.dwg",
+        "url": "drawings/CL V3 Installation Diagram of Back Mounting Bracket 20260311.dwg"
+      },
+      "pdf": {
+        "name": "CL V3 Installation Diagram of Back Mounting Bracket 20260311.pdf",
+        "url": "drawings/CL V3 Installation Diagram of Back Mounting Bracket 20260311.pdf"
+      }
+    },
+    "KLCOB V3挂架+包边配置": {
+      "dwg": {
+        "name": "KLCOB V3 Installation Diagram of Wall Mount Bracket 20260730.dwg",
+        "url": "drawings/KLCOB V3 Installation Diagram of Wall Mount Bracket 20260730.dwg"
+      },
+      "pdf": {
+        "name": "KLCOB V3 Installation Diagram of Wall Mount Bracket 20260730.pdf",
+        "url": "drawings/KLCOB V3 Installation Diagram of Wall Mount Bracket 20260730.pdf"
+      }
+    },
+    "KLCOB V3背条+包边配置": {
+      "dwg": {
+        "name": "KLCOB V3 Installation Diagram of Back Mounting Bracket 20260730.dwg",
+        "url": "drawings/KLCOB V3 Installation Diagram of Back Mounting Bracket 20260730.dwg"
+      },
+      "pdf": {
+        "name": "KLCOB V3 Installation Diagram of Back Mounting Bracket 20260730.pdf",
+        "url": "drawings/KLCOB V3 Installation Diagram of Back Mounting Bracket 20260730.pdf"
+      }
+    },
+    "KLCOB V2挂架+包边配置": {
+      "dwg": {
+        "name": "KLCOB V2 Installation Diagram of Wall Mount Bracket.dwg",
+        "url": "drawings/KLCOB V2 Installation Diagram of Wall Mount Bracket.dwg"
+      },
+      "pdf": {
+        "name": "KLCOB V2 Installation Diagram of Wall Mount Bracket.pdf",
+        "url": "drawings/KLCOB V2 Installation Diagram of Wall Mount Bracket.pdf"
+      }
+    },
+    "KLCOB V2背条+包边配置": {
+      "dwg": {
+        "name": "KLCOB V2 Installation Diagram of Back Mounting Bracket 20260815.dwg",
+        "url": "drawings/KLCOB V2 Installation Diagram of Back Mounting Bracket 20260815.dwg"
+      },
+      "pdf": {
+        "name": "KLCOB V2 Installation Diagram of Back Mounting Bracket 20260815.pdf",
+        "url": "drawings/KLCOB V2 Installation Diagram of Back Mounting Bracket 20260815.pdf"
+      }
+    },
+    "KLCOB挂架+包边配置": {
+      "dwg": {
+        "name": "KLCOB C04 Installation Diagram of Wall Mount Bracket20260731.dwg",
+        "url": "drawings/KLCOB C04 Installation Diagram of Wall Mount Bracket20260731.dwg"
+      },
+      "pdf": {
+        "name": "KLCOB C04 Installation Diagram of Wall Mount Bracket20260731.pdf",
+        "url": "drawings/KLCOB C04 Installation Diagram of Wall Mount Bracket20260731.pdf"
+      }
+    },
+    "KLCOB背条+包边配置": {
+      "dwg": {
+        "name": "KLCOB C04 Installation Diagram of Back Mounting Bracket 20260815.dwg",
+        "url": "drawings/KLCOB C04 Installation Diagram of Back Mounting Bracket 20260815.dwg"
+      },
+      "pdf": {
+        "name": "KLCOB C04 Installation Diagram of Back Mounting Bracket 20260815.pdf",
+        "url": "drawings/KLCOB C04 Installation Diagram of Back Mounting Bracket 20260815.pdf"
+      }
+    },
+    "XL背条+包边配置": {
+      "dwg": {
+        "name": "XL1.8 6x7+1x7 Installation Diagram 20250523.dwg",
+        "url": "drawings/XL1.8 6x7+1x7 Installation Diagram 20250523.dwg"
+      },
+      "pdf": {
+        "name": "XL1.8 6x7+1x7 Installation Diagram 20250523.pdf",
+        "url": "drawings/XL1.8 6x7+1x7 Installation Diagram 20250523.pdf"
+      }
     }
   }
 }
