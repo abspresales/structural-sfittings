@@ -1778,6 +1778,14 @@ function renderTable(){
         if(/公式优先选择/.test(val)) userOverrideHAlign = 'text-align:left!important;';
         else userOverrideHAlign = 'text-align:center!important;';
       }
+      // 3.5 输入区提示性说明文字强制左对齐（不随输入区其它表头居中）：
+      //     - "单个箱体尺寸1200*675mm"（A55/M54 输入区跨列说明，colspan=7）
+      //     - "高度必须≥2，否则公式报错"（XL/KLCOB/KLCOB V2/KLCOB V3/CL V3 输入区公式约束说明）
+      //     这些本质是输入区的说明/约束文字，而非列标题（"宽度/高度"那种才居中）。
+      //     放在居中分支之后作更高优先级覆盖，确保任何数据版本/判定路径都稳定左对齐。
+      if(/单个箱体尺寸|高度必须\s*[≥>=]\s*2|公式报错|否则公式/.test(val)){
+        userOverrideHAlign = 'text-align:left!important;';
+      }
       
       // 4. 组件名称、数量、SAP料号列居中（找本列表头，不跨表格）
       if(!userOverrideHAlign && rNum >= 5){
