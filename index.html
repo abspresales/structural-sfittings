@@ -620,7 +620,7 @@ function closeAdminModal(){
 // 导出JSON数据
 function exportDataJson(){
   try{
-    const data={ALL_DATA:ALL_DATA,INPUT_MAP:INPUT_MAP,MERGE_MAP:MERGE_MAP};
+    const data={ALL_DATA:ALL_DATA,INPUT_MAP:INPUT_MAP,MERGE_MAP:MERGE_MAP,ATTACHMENTS:ATTACHMENTS||{}};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
@@ -635,16 +635,10 @@ function exportDataJson(){
 
 
 // ========== 附件管理 ==========
-// 附件数据结构：{ sheetName: { dwg: {name, data, type}, pdf: {name, data, type} } }
-let ATTACHMENTS = {
-  "PL V3": {
-    "pdf": {
-      "name": "PL_V3_安装示意图.pdf",
-      "data": "data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA2MCA+PgpzdHJlYW0KQlQgL0YxIDI0IFRmIDEwMCA3MDAgVGQgKFBMIFYzIFRlc3QgQXR0YWNobWVudCkgVGogRVQKZW5kc3RyZWFtCmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL0hlbHZldGljYSA+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjY2IDAwMDAwIG4gCjAwMDAwMDAzNzUgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0NTIKJSVFT0Y=",
-      "type": "application/pdf"
-    }
-  }
-};
+// 附件数据结构：{ sheetName: { dwg: {name, url}, pdf: {name, url} } }
+//   name = 图纸原始文件名；url = 相对仓库路径（drawings/<文件名>），前端拼绝对地址下载
+// 注意：图纸以真实文件形式存放在 GitHub 仓库 drawings/ 目录（不内嵌 base64，避免 json 膨胀）。
+let ATTACHMENTS = {};
 let pendingAttachments = null;
 
 // 渲染附件列表（后台维护页面）
@@ -685,7 +679,7 @@ function renderAttachmentList(){
   });
 }
 
-// 上传附件
+// 上传附件：记录文件名到 ATTACHMENTS，并把图纸文件本身保存到本地 Downloads（供自动发布脚本监控推送到 GitHub drawings/）
 function uploadAttachment(sheetName, fileType){
   const input = document.createElement('input');
   input.type = 'file';
@@ -699,23 +693,36 @@ function uploadAttachment(sheetName, fileType){
     const file = e.target.files[0];
     if(!file) return;
     
-    const reader = new FileReader();
-    reader.onload = function(ev){
-      if(!pendingAttachments) pendingAttachments = {};
-      if(!pendingAttachments[sheetName]) pendingAttachments[sheetName] = {};
-      
-      pendingAttachments[sheetName][fileType] = {
-        name: file.name,
-        data: ev.target.result, // base64 data URL
-        type: file.type
-      };
-      
-      renderAttachmentList();
+    // 1) 记录文件名（不含 base64，文件本体走"保存到本地→脚本推送→仓库 drawings/"链路）
+    if(!pendingAttachments) pendingAttachments = {};
+    if(!pendingAttachments[sheetName]) pendingAttachments[sheetName] = {};
+    pendingAttachments[sheetName][fileType] = {
+      name: file.name,
+      url: 'drawings/' + file.name
     };
-    reader.readAsDataURL(file);
+    
+    // 2) 把图纸文件保存到本地 Downloads，供发布脚本监控（文件名加"图纸_"前缀+sheet+类型便于脚本归属）
+    try{
+      const downloadName = '图纸_' + safeFileName(sheetName) + '_' + fileType + '_' + file.name;
+      const blobUrl = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = downloadName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 4000);
+    }catch(e){ console.error('保存图纸到本地失败：', e); }
+    
+    renderAttachmentList();
   };
   
   input.click();
+}
+
+// 文件名安全化（去掉 Windows/GitHub 非法字符，避免路径问题）
+function safeFileName(name){
+  return String(name).replace(/[\\\/:*?"<>|]/g, '_');
 }
 
 // 删除附件
@@ -725,6 +732,9 @@ function deleteAttachment(sheetName, fileType){
   renderAttachmentList();
 }
 
+// 前台附件下载区所占的 GitHub Pages 仓库根地址（图纸文件存放于仓库 drawings/ 目录）
+const ATTACH_BASE = 'https://abspresales.github.io/structural-sfittings/';
+
 // 渲染前台附件下载区
 function updateAttachmentDisplay(){
   const container = document.getElementById('attachmentContainer');
@@ -732,8 +742,7 @@ function updateAttachmentDisplay(){
   
   const att = ATTACHMENTS[currentSheet];
   if(!att || (!att.dwg && !att.pdf)){
-    // 没有附件时保留硬编码的测试附件，或者清空
-    // container.innerHTML = '';
+    container.innerHTML = '';
     return;
   }
   
@@ -741,13 +750,15 @@ function updateAttachmentDisplay(){
   html += '<span class="label">附件下载：</span>';
   
   if(att.dwg){
-    html += '<a class="download-link" href="' + att.dwg.data + '" download="' + att.dwg.name + '">' +
-            '<span class="icon">&#128230;</span> DWG文件：' + att.dwg.name + '</a>';
+    const u = ATTACH_BASE + att.dwg.url;
+    html += '<a class="download-link" href="' + u + '" download="' + att.dwg.name + '" target="_blank" rel="noopener">' +
+            '<span class="icon">&#128230;</span> DWG：' + att.dwg.name + '</a>';
   }
   
   if(att.pdf){
-    html += '<a class="download-link" href="' + att.pdf.data + '" download="' + att.pdf.name + '">' +
-            '<span class="icon">&#128196;</span> PDF文件：' + att.pdf.name + '</a>';
+    const u = ATTACH_BASE + att.pdf.url;
+    html += '<a class="download-link" href="' + u + '" download="' + att.pdf.name + '" target="_blank" rel="noopener">' +
+            '<span class="icon">&#128196;</span> PDF：' + att.pdf.name + '</a>';
   }
   
   html += '</div>';
@@ -3099,6 +3110,7 @@ async function loadDataFromJson(){
       ALL_DATA=data.ALL_DATA;
       INPUT_MAP=data.INPUT_MAP||{};
       MERGE_MAP=data.MERGE_MAP||{};
+      if(data.ATTACHMENTS && typeof data.ATTACHMENTS==='object') ATTACHMENTS=data.ATTACHMENTS;
       console.log('已从 structural-sfittings.json 加载数据：'+Object.keys(ALL_DATA).length+' 个工作表');
       return true;
     }
