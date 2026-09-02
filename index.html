@@ -1134,6 +1134,11 @@ var COL_BASE_WIDTH = { name:150, qty:72, sap:110, desc:190, logic:210, weight:72
 function splitCNEN(txt){
   if(!txt) return '';
   txt = String(txt);
+  // 源数据若已自带分行(中英文各一行，如"大箱体宽度\nWidth of big panel")，直接按原换行保留，
+  // 避免再按"最后一个中文字符"切分导致全角括号等中文后缀标点被误归到英文行开头。
+  if(/\r?\n/.test(txt)){
+    return txt.split(/\r?\n/).map(function(l){ return l.replace(/\s+/g,' ').trim(); }).filter(Boolean).join('\n');
+  }
   if(!/[\u4e00-\u9fff]/.test(txt) || !/[A-Za-z0-9]/.test(txt)) return txt; // 须中英混合
   var cn = (txt.match(/[\u4e00-\u9fff]+/g)||[]).join('');                   // 中文块
   var lastCj = -1;
@@ -1639,7 +1644,12 @@ function renderTable(){
         break;
       }
     }
-    const isNote = aVal && /PS：|注：|备注|仅供参考|请勿|暂未|注意/.test(aVal);
+    // ★备注行必须是"非组件标题"才成立：CL V3 的包边组件标题文本自带"注意：CL V3包边方案下单前…"
+    //   说明（如 A11"CL V3-包边组件（Trim Components）：箱体高度必须≥3…注意：…"），含"注意"字样，
+    //   若被 isNote 判为备注行，会导致"包边组件"标题无法独立成 section、包边组件表与前一张组件表混在一起，
+    //   表头错乱。故凡命中"背条/挂架/包边组件标题"特征的行，一律优先视为 section 标题，不当作备注。
+    const isCompTitleLike = /(背条|挂架|包边)\s*组件|Wall Mounted Bracket Components|Trim\s*Components/.test(aVal) && !rowHasDataBeyondA;
+    const isNote = !isCompTitleLike && aVal && /PS：|注：|备注|仅供参考|请勿|暂未|注意/.test(aVal);
     // 显式"类别"分组标题：用户在新版Excel里以黄色填充+"类别："前缀标记分类标题（如"类别：落地支架..."），
     // 这类行下方的内容即该分类的明细。除第1行主标题外，凡以"类别："开头的一律作为分组标题。
     const isCatSection = /^类别[:：]/.test(aVal) && rNum > 1;
@@ -1651,7 +1661,18 @@ function renderTable(){
                        || /^航空箱Flight Cases/.test(aVal)) && !rowHasDataBeyondA;
     // ★备注行（PS：/注：/备注/仅供参考…）绝不能当作分区标题——它是数据区末尾的普通备注，
     // 应作为当前区块(方式2等)的最后一行 note-row 显示，而不是独立起一个标题/独立表格。
-    const isSection = aVal && !isNote && (isCatSection || isStdSection || isLongSection) && !/最大支持|排列方式|计算公式/.test(aVal);
+    // 组件类分组标题：如 "NX-包边组件（Trim Components）：计算公式仅支持..."。
+    // 这类行只含A列(跨全表)且无其他列数据，是"包边组件明细"的分组标题/表头，
+    // 应作为独立表格的标题显示（NX/XL/KLCOB/CL V3/ALT/K V3/K V4/M54/A55 等15个sheet都有）。
+    const isTrimSection = /包边\s*组件|Trim\s*Components/.test(aVal) && !rowHasDataBeyondA;
+    // ★背条/挂架/包边"组件明细"标题：含 "Wall Mounted Bracket Components" / "背条组件" / "挂架组件" 
+    //   的行（仅A列有内容）也作为独立表格标题。K V3 的背条标题后带补充说明（如"(旧版本和V3X版本…
+    //   可以用如下背条)"），不以括号结尾，无法被 isStdSection 捕获 → 背条组件表会与输入区混用一张表，
+    //   导致无法与包边组件表列宽对齐。这里一并识别为组件标题，使其独立成表、参与跨表对齐。
+    const isCompSection = /(背条|挂架|包边)\s*组件|Wall Mounted Bracket Components|[（(]\s*(Wall Mounted Bracket|Trim)\s*Components/.test(aVal) && !rowHasDataBeyondA;
+    const isSection = aVal && !isNote && 
+      (((isCatSection || isStdSection || isLongSection) && !/最大支持|排列方式|计算公式/.test(aVal)) 
+       || isTrimSection || isCompSection);
     const isInputHeader = (/Width|Height|Quantity|宽度|高度|数量/.test(bVal+cVal) && !inputs.includes('B'+rNum));
     const isInputRow = aVal && /排列方式|Input screen/.test(aVal);
     
@@ -1753,7 +1774,9 @@ function renderTable(){
       //    不同 sheet 里的行列位置不固定，第1步已按文字内容将其设为左对齐，
       //    这里用 !userOverrideHAlign 保证提示文字不被覆盖。
       if(!userOverrideHAlign && (isInputHeader || isInputRow || inputs.includes(ref))){
-        userOverrideHAlign = 'text-align:center!important;';
+        // "公式优先选择双倍背条" 等提示性表头文字左对齐（跨列表头单元格）
+        if(/公式优先选择/.test(val)) userOverrideHAlign = 'text-align:left!important;';
+        else userOverrideHAlign = 'text-align:center!important;';
       }
       
       // 4. 组件名称、数量、SAP料号列居中（找本列表头，不跨表格）
@@ -1932,12 +1955,10 @@ function applyLogicalWidths(table, logicalTargets){
   });
   // 每个语义类型对应的逻辑列目标宽
   var idxByName = {name:0, qty:1, sap:2, desc:3, logic:4, weight:5};
-  // 前4个逻辑列(name/qty/sap/desc)是跨表对齐的基准，保持 seq 值不变；
-  // 第5+个逻辑列(logic/weight等)作为"尾部"，稍后按占比放大填满容器剩余空间。
-  var headSum = 0;   // 前4逻辑列目标宽之和
-  var tailSum = 0;   // 尾部逻辑列(第5+组)当前宽度之和
-  var tailGroups = [];  // 记录第5+组的 [start,end] 物理列下标
-  var ord = 0;          // 语义组序号
+  var headSum = 0;   // 逻辑列(seq有目标值)之和 —— 这些列统一用 seq 基准宽(跨表对齐)
+  var tailSum = 0;   // 非逻辑(other)列当前宽度之和
+  var tailGroups = [];  // 记录 other 列的 [start,end] 物理列下标
+  var logicGroups = []; // 记录逻辑列(有seq目标值)的 [start,end] 物理列下标
   var i = 0;
   while(i < cols.length){
     var type = phyType[i];
@@ -1946,38 +1967,45 @@ function applyLogicalWidths(table, logicalTargets){
     var gcols = j - i;
     var lgIdx = idxByName[type];
     var target = (lgIdx !== undefined && logicalTargets[lgIdx]) ? logicalTargets[lgIdx] : 0;
-    if(target > 0 && gcols > 0){
-      if(ord < 4){   // 前4列：设为 seq 基准（跨表对齐）
-        var groupSum = 0;
-        for(var m=i;m<j;m++){ groupSum += (parseFloat(cols[m].style.width)||0); }
-        if(groupSum <= 0){ var each = target/gcols; for(var m2=i;m2<j;m2++){ cols[m2].style.width = each.toFixed(1)+'px'; } }
-        else { for(var m3=i;m3<j;m3++){ var sc = (parseFloat(cols[m3].style.width)||0)*(target/groupSum); cols[m3].style.width = sc.toFixed(1)+'px'; } }
-        headSum += target;
-      } else {   // 第5+组：保留当前宽度，记入 tailGroups 待放大
-        for(var m4=i;m4<j;m4++){ tailSum += (parseFloat(cols[m4].style.width)||0); }
-        tailGroups.push([i,j]);
-      }
-      ord++;
+    if(target > 0 && gcols > 0){   // 逻辑列(name/qty/sap/desc/logic/weight)：统一设为 seq 基准(跨表对齐)
+      var groupSum = 0;
+      for(var m=i;m<j;m++){ groupSum += (parseFloat(cols[m].style.width)||0); }
+      if(groupSum <= 0){ var each = target/gcols; for(var m2=i;m2<j;m2++){ cols[m2].style.width = each.toFixed(1)+'px'; } }
+      else { for(var m3=i;m3<j;m3++){ var sc = (parseFloat(cols[m3].style.width)||0)*(target/groupSum); cols[m3].style.width = sc.toFixed(1)+'px'; } }
+      headSum += target;
+      logicGroups.push([i,j]);
+    } else {   // 非逻辑(other)列：保留原宽，纳入尾部
+      var groupReal = false;
+      for(var m4=i;m4<j;m4++){ var cw=(parseFloat(cols[m4].style.width)||0); if(cw>=10){ tailSum += cw; groupReal=true; } }
+      if(groupReal) tailGroups.push([i,j]);
     }
     i = j;
   }
-  // ★铺满容器：前4逻辑列保持 seq 基准宽(跨表对齐)，尾部逻辑列按各自宽度占比放大填满容器剩余空间，
-  //   避免表格右侧留白（不同表内容不同导致总宽不同，需统一铺满使三表总宽一致且对齐）。
+  // ★铺满容器且【优先保证逻辑列跨表对齐】：
+  //   逻辑列统一设为 seq 基准宽(跨表一致)；剩余空间给 other 列。
+  //   仅当"逻辑列之和"本身超容器时，才把逻辑列等比缩到 avail(同 seq→同 scale→跨表仍一致)，
+  //   并把 other 列压到最小——绝不因 other 列挤占而缩小逻辑列(否则跨表对齐失效)。
   var avail = getTableAvailableWidth(table);
-  var total = headSum + tailSum;
-  if(avail > 0 && headSum > 0 && avail > headSum){
-    var rest = avail - headSum;
-    if(tailGroups.length > 0){
-      if(tailSum > 0){
+  var total = headSum;   // 逻辑列基准之和；逻辑列不因 other 列缩放，保证跨表对齐
+  if(avail > 0 && headSum > 0){
+    var rest = avail - headSum;   // 逻辑列占满后剩余给 other 列的空间(可为负=逻辑列超容器)
+    if(tailGroups.length > 0 && tailSum > 0){
+      if(rest >= 0){   // 逻辑列未超容器：逻辑列保持 seq 基准(跨表对齐)，other 列占 rest(放大或压缩)
         var scale2 = rest / tailSum;
-        for(var g=0;g<tailGroups.length;g++){
-          var s0=tailGroups[g][0], s1=tailGroups[g][1];
-          for(var m5=s0;m5<s1;m5++){ cols[m5].style.width = (parseFloat(cols[m5].style.width)*scale2).toFixed(1)+'px'; }
-        }
-      } else {
-        var tailCnt = 0; for(var gg=0;gg<tailGroups.length;gg++){ tailCnt += (tailGroups[gg][1]-tailGroups[gg][0]); }
-        if(tailCnt>0){ var each2 = rest/tailCnt; for(var gg2=0;gg2<tailGroups.length;gg2++){ var e0=tailGroups[gg2][0],e1=tailGroups[gg2][1]; for(var m6=e0;m6<e1;m6++){ cols[m6].style.width = each2.toFixed(1)+'px'; } } }
+        for(var g=0;g<tailGroups.length;g++){ var s0=tailGroups[g][0], s1=tailGroups[g][1];
+          for(var m5=s0;m5<s1;m5++){ cols[m5].style.width = (parseFloat(cols[m5].style.width)*scale2).toFixed(1)+'px'; } }
+      } else {   // 逻辑列已超容器：只把逻辑列等比缩到 avail(同 scale，跨表仍一致)，other 列压到极小
+        var scale = avail / headSum;
+        for(var lg=0; lg<logicGroups.length; lg++){ var l0=logicGroups[lg][0], l1=logicGroups[lg][1];
+          for(var m7=l0;m7<l1;m7++){ var cwL=(parseFloat(cols[m7].style.width)||0); if(cwL>0){ cols[m7].style.width=(cwL*scale).toFixed(1)+'px'; } } }
+        for(var og=0; og<tailGroups.length; og++){ var o0=tailGroups[og][0], o1=tailGroups[og][1];
+          for(var m8=o0;m8<o1;m8++){ var cwO=(parseFloat(cols[m8].style.width)||0); if(cwO>0){ cols[m8].style.width=Math.min(cwO*scale,8).toFixed(1)+'px'; } } }
       }
+      total = avail;
+    } else if(avail !== headSum && avail > 0){
+      // 无 other 列：逻辑列等比缩放铺满容器(同一scale，仍跨表对齐)。headSum 可能>或<avail
+      var scale3 = avail/headSum;
+      for(var mi2=0;mi2<cols.length;mi2++){ var cwB=(parseFloat(cols[mi2].style.width)||0); if(cwB>0){ cols[mi2].style.width=(cwB*scale3).toFixed(1)+'px'; } }
       total = avail;
     }
   }
@@ -2102,6 +2130,16 @@ function alignFirstColsAcrossTables(container){
   //    前几列(名称/数量/料号/描述)统一对齐，消除"上下没对齐"与"右侧列被压缩" ——
   var struct = grounds.slice();
   if(m1) struct.push(m1);
+  // ★背条/挂架/包边类sheet（NX/XL/KLCOB/ALT/K V4/M54/A55等）：其"组件表+包边表"是两张同构结构表，
+  //   但 sheet 名不含"落地支架"，从未被标为 ground/mode1/mode2，因此没有被纳入跨表对齐 → 上下错位。
+  //   这里额外扫描容器内所有"表头首列=组件名称"的同构结构表(排除航空箱表)，一并纳入统一列宽对齐。
+  container.querySelectorAll('table.data-table').forEach(function(t){
+    var hdr=getHeaderRowForTable(t); if(!hdr||!hdr.children||!hdr.children[0]) return;
+    var c0=(hdr.children[0].textContent||'').trim();
+    if(!/组件名称|Components/.test(c0)) return;   // 只取"组件表"，排除航空箱(mode1)表
+    if(struct.indexOf(t)>=0) return;               // 已在 grounds/m1 里，避免重复
+    struct.push(t);
+  });
   // 只保留真正含 名称+数量+料号+描述 的结构表
   struct = struct.filter(function(t){ var w=getLogicalGroupWidths(t); return t && w.name>0 && w.qty>0 && w.sap>0 && w.desc>0; });
   if(struct.length === 0) return;
@@ -2113,6 +2151,16 @@ function alignFirstColsAcrossTables(container){
     for(var i=0;i<names.length;i++){ if(w[names[i]]>seq2[i]) seq2[i]=w[names[i]]; }
   });
   if(!(seq2[0] && seq2[1] && seq2[2] && seq2[3])) return;
+  // ★只约束"前6逻辑列之和 ≤ 容器宽"，保证多张结构表的前6列(名称/数量/SAP/描述/逻辑/重量)完全跨表对齐。
+  //   备注/空列等其他列不参与挤占逻辑列——它们占 容器宽-前6列和 的剩余(可能为0或被压缩)。
+  //   这样 KLCOB 等含备注列的表，其前6明细列仍与背条组件表完全对齐(用户核心诉求)。
+  var avail2 = getTableAvailableWidth(struct[0]);
+  var seqSum = seq2[0]+seq2[1]+seq2[2]+seq2[3]+seq2[4]+seq2[5];
+  if(avail2 > 0 && seqSum > avail2){
+    var seqScale = avail2 / seqSum;
+    for(var si=0; si<seq2.length; si++){ seq2[si] = Math.round(seq2[si]*seqScale*10)/10; }
+  }
+  // 让无备注/空列的表(如NX)尾部也占满:其余列本来由 applyLogicalWidths 按 rest=avail-headSum 填充
   struct.forEach(function(t){ applyLogicalWidths(t, seq2); });
 }
 
