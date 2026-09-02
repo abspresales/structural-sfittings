@@ -16448,6 +16448,16 @@
         "name": "PL2.5 PRO V10-500X500-4.5MX3M-落地支架安装.pdf",
         "url": "drawings/PL2.5 PRO V10-500X500-4.5MX3M-落地支架安装.pdf"
       }
+    },
+    "NT V2落地支架(新款)": {
+      "dwg": {
+        "name": "NT2.6 V2-500X1000-12MX3M-落地支架安装.dwg",
+        "url": "drawings/NT2.6 V2-500X1000-12MX3M-落地支架安装.dwg"
+      },
+      "pdf": {
+        "name": "NT2.6 V2-500X1000-12MX3M-落地支架安装.pdf",
+        "url": "drawings/NT2.6 V2-500X1000-12MX3M-落地支架安装.pdf"
+      }
     }
   }
 }
