@@ -6,17 +6,17 @@
 <title>结构配件速算表</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Arial,"Microsoft YaHei",sans-serif;background:#f0f2f5;color:#333;font-size:13px}
-.header{background:linear-gradient(135deg,#1a3a5c 0%,#2d5f8a 100%);color:#fff;padding:20px 24px}
+body{font-family:Arial,"Microsoft YaHei",sans-serif;background:#F5F6F8;color:#333;font-size:13px}
+.header{background:#1a3a5c;color:#fff;padding:20px 24px}
 .header h1{font-size:20px;font-weight:600;margin-bottom:6px}
 .header .subtitle{font-size:12px;opacity:0.85;line-height:1.6}
 .header .version{font-size:11px;opacity:0.7;margin-top:4px}
 .container{max-width:1800px;margin:0 auto;padding:16px}
 .filter-bar{background:#fff;border-radius:8px;padding:16px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.filter-group{display:flex;align-items:center;gap:8px;border:1px solid #e6eef6;border-radius:6px;padding:5px 12px;background:transparent}
+.filter-group{display:flex;align-items:center;gap:8px}
 .filter-group label{font-size:12px;color:#666;font-weight:500}
 .filter-group select{padding:6px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;background:#fff;min-width:160px;cursor:pointer}
-.export-btn{padding:0 18px;height:34px;line-height:34px;background:#1a3a5c;color:#fff;border:1px solid #e6eef6;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500;white-space:nowrap;}
+.export-btn{padding:0 18px;height:34px;line-height:34px;background:#1a3a5c;color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;font-weight:500;white-space:nowrap;}
 .export-btn:hover{background:#2d5f8a}
 .note-bar{background:#fff7e6;border:1px solid #ffd591;border-radius:6px;padding:10px 16px;margin-bottom:12px;font-size:14px;font-weight:bold;color:#874d00;line-height:1.6}
 .table-section{background:#fff;border-radius:8px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08);overflow:hidden}
@@ -225,9 +225,9 @@ td[data-formula-ref].flash-update{animation:flashUpdate 1.15s ease forwards;bord
 .attachment-item .delete-btn:hover{background:#fff1f0}
 /* 附件下载区（置于筛选工具条内，与导出按钮并排） */
 .attachment-container{display:inline-flex;align-items:center;margin-left:4px;flex:0 0 auto;}
-.sheet-attachments{background:transparent;border:1px solid #e6eef6;border-radius:6px;padding:6px 12px;margin:0;box-shadow:none;display:inline-flex;flex-direction:column;align-items:flex-start;gap:4px;}
+.sheet-attachments{background:transparent;border:1px solid #e6eef6;border-radius:6px;padding:5px 12px;margin:0;box-shadow:none;display:inline-flex;align-items:center;gap:10px;flex-wrap:nowrap;}
 .sheet-attachments .label{font-size:12px;font-weight:600;color:#1a3a5c;white-space:nowrap}
-.sheet-attachments .download-link{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:#f0f5fa;color:#193a5b;border-radius:4px;font-size:12px;text-decoration:none;transition:background 0.2s;white-space:nowrap;}
+.sheet-attachments .download-link{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#f0f5fa;color:#193a5b;border-radius:4px;font-size:12px;text-decoration:none;transition:background 0.2s;white-space:nowrap;}
 .sheet-attachments .download-link:hover{background:#e0eaf5}
 .sheet-attachments .download-link .icon{font-size:14px}
 .sheet-attachments .no-file{font-size:12px;color:#999}
@@ -245,7 +245,7 @@ html,body{overflow-x:hidden;width:100%}
   .filter-group select{min-width:0;width:100%;max-width:100%;font-size:12px}
   .export-btn{font-size:12px;padding:0 14px;height:32px;line-height:32px;width:100%}
   #attachmentContainer{display:block!important;margin-left:0!important;width:100%}
-  .sheet-attachments{display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;border:none;padding:6px 0}
+  .sheet-attachments{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;width:100%;border:none;padding:6px 0}
   .sheet-attachments .label{width:100%}
   .sheet-attachments .download-link{word-break:break-all;font-size:11px}
   .note-bar{font-size:12px;padding:8px 12px;word-break:break-word;white-space:normal;width:100%;max-width:100%;box-sizing:border-box}
@@ -268,6 +268,154 @@ html,body{overflow-x:hidden;width:100%}
   .header h1{font-size:16px}
   .filter-group select{min-width:100px}
   table.data-table{font-size:10px}
+}
+
+/* ==================== 视觉美化层 v3（对齐线材速查表参考风格）==================== */
+:root{
+  --e-out:cubic-bezier(.16,1,.3,1);--e-spr:cubic-bezier(.34,1.56,.64,1);--e-sm:cubic-bezier(.4,0,.2,1);
+  --navy-900:#1E3A5F;--navy-800:#33415C;--navy-700:#3E5A7E;--navy-600:#5A6B82;--navy-500:#8A97A8;
+  --orange-500:#E78131;--orange-600:#D96C1F;--orange-700:#B85A18;
+  --cream-50:#FDF8F2;--cream-100:#FBEEDD;--paper-50:#F7F9FC;--paper-100:#EDF1F6;
+  --line:#DDE4EE;--ink:#1F2B3A;--ink-soft:#5A6B82;--brand:var(--orange-500);--accent:var(--orange-500);
+  --ring:0 0 0 3px rgba(231,129,49,.22);
+}
+html{scroll-behavior:smooth;}
+::selection{background:rgba(243,156,18,.22);color:inherit;}
+:focus-visible{outline:2px solid rgba(243,156,18,.65);outline-offset:2px;}
+*{scrollbar-width:thin;scrollbar-color:#cfd6e1 transparent;}
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-thumb{background:#cfd6e1;border-radius:99px;border:2px solid transparent;background-clip:padding-box;}
+::-webkit-scrollbar-thumb:hover{background:#a4b1c4;}
+
+/* 页面干净纯浅白（对齐 Absen 官网，去掉灰渐变/光晕） */
+body{
+  font-family:Arial,"Microsoft YaHei","微软雅黑",sans-serif!important;
+  background:#F5F6F8!important;
+  background-attachment:fixed;color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+
+/* 顶部横幅：浅蓝渐变 + 深蓝字（左对齐） */
+.header{
+  position:relative;isolation:isolate;
+  background:linear-gradient(180deg,#EAF2FC,#DEEBFA)!important;text-align:left;
+  box-shadow:0 2px 14px rgba(150,80,20,.18);
+  animation:headIn .55s var(--e-out) backwards;padding:20px 24px!important;min-height:123px;box-sizing:border-box;
+}
+@keyframes headIn{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:none;}}
+.header h1{position:relative;z-index:2;font-size:22px!important;letter-spacing:1.5px;font-weight:800;color:#1E3A5F;
+  text-shadow:none;margin:0 0 6px 0!important;display:flex;align-items:center;gap:12px;text-align:left;}
+.header .subtitle,.header .version{position:relative;z-index:2;text-shadow:none;letter-spacing:.3px;text-align:left;}
+.header .subtitle{font-size:13px!important;font-weight:700;opacity:1!important;color:#1E3A5F;line-height:1.7;margin:0 0 4px 0!important;}
+.header .version{font-size:12px!important;opacity:1!important;line-height:1.7;color:#3A5A7A;margin:0!important;}
+
+/* 卡片：白底 + 顶部橙线 + 柔影 + 悬浮微动 + 入场 */
+.filter-bar,.table-section{
+  background:#fff;border:1px solid #E1E8F1;border-radius:14px;position:relative;
+  box-shadow:0 1px 2px rgba(14,42,74,.04),0 8px 24px rgba(14,42,74,.06);
+  transition:box-shadow .35s var(--e-out),border-color .35s var(--e-out),transform .35s var(--e-out);}
+.filter-bar::before,.table-section::before{display:none;}
+.filter-bar{animation:cardIn .55s var(--e-out) .05s backwards;margin-bottom:16px!important;position:relative;z-index:200;}
+.table-section{animation:cardIn .55s var(--e-out) .12s backwards;}
+.filter-bar:hover{box-shadow:0 2px 5px rgba(14,42,74,.06),0 18px 40px rgba(14,42,74,.12);border-color:#D2DCE9;transform:translateY(-2px);}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+
+/* 选择框（select）美化 */
+.filter-group label{color:var(--navy-700);font-weight:600;background:#F4F7FB;border:1px solid #E1E8F1;border-radius:7px;padding:4px 9px;letter-spacing:.3px;}
+.filter-group select{border-radius:9px;background:#FAFCFE;border-color:#D7E0EC;color:var(--ink);font-weight:500;
+  transition:border-color .22s var(--e-sm),box-shadow .22s var(--e-sm),background .22s;}
+.filter-group select:hover{border-color:#B9C8DE;}
+.filter-group select:focus{border-color:var(--orange-500);box-shadow:var(--ring);background:#fff;outline:none;}
+
+/* 按钮：导出=橙色主按钮，附加重置等中立 */
+.export-btn{background:linear-gradient(135deg,var(--orange-500),var(--orange-600));border-radius:9px;font-weight:600;letter-spacing:.3px;
+  box-shadow:0 4px 12px rgba(230,126,34,.35);transition:transform .2s var(--e-spr),box-shadow .25s var(--e-sm),background .2s;}
+.export-btn:hover{background:linear-gradient(135deg,#FBAE2E,#ED8525);box-shadow:0 6px 18px rgba(230,126,34,.48);transform:translateY(-1px);}
+.export-btn:active{transform:translateY(0) scale(.965);}
+
+/* 表格：深蓝渐变表头白字 + 橙色顶部 + 首列加粗 */
+table.data-table{border-radius:8px;overflow:hidden;}
+table.data-table th{background:linear-gradient(180deg,#EAF2FC 0%,#DEEBFA 100%)!important;color:#1E3A5F!important;
+  font-weight:700;border:none!important;border-bottom:1px solid rgba(30,58,95,.08)!important;}
+table.data-table td{border-color:#ECF0F6!important;color:var(--ink);font-weight:500;}
+table.data-table tbody tr{transition:background .16s var(--e-sm);}
+/* 表头分组/输入区表头：浅蓝底深字（对齐 Absen，中英文清晰） */
+table.data-table tr.section-header td{background:linear-gradient(135deg,#EAF2FC,#DEEBFA)!important;color:#1E3A5F!important;font-weight:700;border-color:rgba(30,58,95,.10)!important;}
+table.data-table tr.input-header td{background:linear-gradient(180deg,#EAF2FC 0%,#DEEBFA 100%)!important;color:#1E3A5F!important;font-weight:700;border-color:rgba(30,58,95,.08)!important;}
+.cat-section-title{background:linear-gradient(135deg,#FBEEDD,#F7DDB4)!important;color:#B85A18!important;border-bottom:2px solid #F0DBA8!important;font-weight:700;}
+.table-section-title{background:linear-gradient(180deg,#EAF2FC 0%,#DEEBFA 100%)!important;color:#1E3A5F!important;font-weight:700;border-bottom:2px solid rgba(30,58,95,.08)!important;}
+
+/* note-bar：奶油橙（对齐参考主色） */
+.note-bar{background:linear-gradient(135deg,var(--cream-50),var(--cream-100));border:1px solid #F0DBA8;border-radius:10px;color:var(--orange-700);box-shadow:0 2px 10px rgba(230,126,34,.10);}
+
+/* 输入区黄色格：保持但更精致 */
+table.data-table tr.input-row td{background:#FFF8E3;border-color:#F0E1B8!important;font-weight:700;}
+input[type=number]{border-color:var(--orange-500);border-radius:6px;background:#FFFDF5;transition:border-color .2s,box-shadow .2s,background .2s;}
+input[type=number]:focus{border-color:var(--orange-500);box-shadow:var(--ring);outline:none;background:#fff;}
+
+/* SAP料号：橙色悬停，呼应参考 */
+.sap-copy-cell{cursor:pointer;border-radius:5px;transition:background .18s,color .18s;}
+.sap-copy-cell:hover{background:var(--cream-50);color:var(--orange-700);}
+.sap-copy-cell.copied{color:#1E8E4E!important;}
+
+/* 右下角齿轮：橙/蓝 */
+.fab-btn{background:linear-gradient(135deg,var(--orange-500),var(--orange-600));box-shadow:0 4px 12px rgba(231,129,49,.30);}
+.fab-btn.settings{background:linear-gradient(135deg,var(--orange-500),var(--orange-600));}
+.fab-btn.history{background:linear-gradient(135deg,#7A8699,#5C6776);}
+.fab-btn:hover{transform:scale(1.08);filter:none;}
+
+/* 弹窗 */
+.modal{border-radius:18px;box-shadow:0 30px 100px rgba(14,42,74,.40),0 6px 20px rgba(14,42,74,.16);border:1px solid #E1E8F1;}
+.modal-header{background:linear-gradient(180deg,#FFFFFF,#F5F8FC);color:#1E3A5F;border-bottom:3px solid #E1E8F1;}
+.modal-header h3{color:#1E3A5F!important;}
+.modal-close{color:#5A6B82;}
+.modal-close:hover{background:rgba(243,156,18,.25);color:#1E3A5F;}
+.modal-overlay{background:rgba(14,42,74,.48);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+.login-btn{background:linear-gradient(135deg,var(--orange-500),var(--orange-600));border-radius:9px;font-weight:600;box-shadow:0 4px 12px rgba(230,126,34,.35);}
+.login-btn:hover{background:linear-gradient(135deg,#FBAE2E,#ED8525);}
+.login-form input{border-radius:8px;border-color:#D7E0EC;transition:border-color .2s,box-shadow .2s;}
+.login-form input:focus{border-color:var(--orange-500);box-shadow:var(--ring);outline:none;}
+
+/* 履历表/附件 */
+.update-log-table th{background:linear-gradient(180deg,#EAF2FC,#DEEBFA)!important;color:#1E3A5F!important;border-color:rgba(30,58,95,.08)!important;}
+.update-log-table td{border-color:#ECF0F6!important;}
+.update-log-table tr:nth-child(even){background:#FAFCFE;}
+.attachment-section h4{color:var(--navy-700);}
+.attachment-item{border-radius:8px;border-color:#E1E8F1;background:#FAFCFE;transition:background .18s,border-color .18s;}
+.attachment-item:hover{border-color:#B8C8E0;background:#fff;}
+.attachment-item .sheet-name{color:var(--navy-700);}
+.attachment-item .upload-btn{background:linear-gradient(135deg,var(--orange-500),var(--orange-600));border-radius:6px;}
+.sheet-attachments{border:1px solid #E1E8F1;border-radius:8px;}
+.sheet-attachments .download-link{background:#F4F7FB;color:var(--navy-700);border-radius:7px;border:1px solid #E1E8F1;transition:all .18s;}
+.sheet-attachments .download-link:hover{background:var(--cream-50);border-color:var(--orange-500);color:var(--orange-700);}
+.sheet-attachments .label{color:var(--navy-700);}
+
+/* 页脚 / 上传区 / 其他 */
+.footer{color:var(--ink-soft);letter-spacing:.3px;}
+.upload-area{border-color:#D7E0EC;background:#FAFCFE;border-radius:12px;}
+.upload-area:hover,.upload-area.dragover{border-color:var(--orange-500);background:var(--cream-50);}
+.empty-state{color:var(--ink-soft);letter-spacing:1px;}
+.btn-cancel{border-radius:8px;border-color:#D7E0EC;}
+.btn-save{background:linear-gradient(135deg,#27AE60,#1E8E4E);border-radius:8px;}
+.btn-save:hover{background:linear-gradient(135deg,#2EC06B,#1F9954);}
+
+/* 悬浮微动 + 减动效 */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important;scroll-behavior:auto!important;}
+}
+
+/* ==================================================================
+   ✅ Absen 官网排版细节：系统字体栈 + 深灰标题 + 舒适行高
+   ================================================================== */
+h1,h2,h3,h4,strong,b{font-weight:700;color:#2A2F38;}
+/* 正文/表格统一深灰，提升可读性 */
+body,table.data-table td,table.data-table th,.filter-group label,.note-bar,.attachment-section{
+  color:#33373D;
+}
+/* 卡片内容更透气 */
+.filter-bar,.table-section,.note-bar,.attachment-section{}
+@media (max-width:768px){
+  .header h1{font-size:19px!important;letter-spacing:1px;}
+  body>div[style*="linear-gradient"]{padding:18px 18px 16px 18px!important;}
 }
 </style>
 <script>
@@ -544,13 +692,9 @@ function saveUpdate(){
       }
     }
     
-    // 保存附件数据（合并而非整体替换，保留上传后已直接写入 ATTACHMENTS 的图纸映射）
+    // 保存附件数据
     if(pendingAttachments){
-      const pendingCopy = JSON.parse(JSON.stringify(pendingAttachments));
-      if(!ATTACHMENTS) ATTACHMENTS = {};
-      Object.keys(pendingCopy).forEach(sheetName => {
-        ATTACHMENTS[sheetName] = pendingCopy[sheetName];
-      });
+      ATTACHMENTS = JSON.parse(JSON.stringify(pendingAttachments));
     }
     
     // 重新渲染
@@ -624,15 +768,7 @@ function closeAdminModal(){
 // 导出JSON数据
 function exportDataJson(){
   try{
-    // 合并已确认的附件与本次临时上传但尚未点"保存"的附件（pendingAttachments），
-    // 保证"上传图纸后直接点导出JSON"也能把图纸映射正确写入 json，避免导出空 ATTACHMENTS。
-    const mergedAttachments = JSON.parse(JSON.stringify(ATTACHMENTS || {}));
-    if(pendingAttachments){
-      Object.keys(pendingAttachments).forEach(sheetName => {
-        mergedAttachments[sheetName] = JSON.parse(JSON.stringify(pendingAttachments[sheetName]));
-      });
-    }
-    const data={ALL_DATA:ALL_DATA,INPUT_MAP:INPUT_MAP,MERGE_MAP:MERGE_MAP,ATTACHMENTS:mergedAttachments};
+    const data={ALL_DATA:ALL_DATA,INPUT_MAP:INPUT_MAP,MERGE_MAP:MERGE_MAP,ATTACHMENTS:ATTACHMENTS||{}};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
@@ -665,7 +801,7 @@ function renderAttachmentList(){
     const item = document.createElement('div');
     item.className = 'attachment-item';
     
-    const att = (ATTACHMENTS && ATTACHMENTS[sheetName]) ? ATTACHMENTS[sheetName] : (pendingAttachments && pendingAttachments[sheetName] ? pendingAttachments[sheetName] : {});
+    const att = pendingAttachments && pendingAttachments[sheetName] ? pendingAttachments[sheetName] : (ATTACHMENTS[sheetName] || {});
     
     const dwgFile = att.dwg;
     const pdfFile = att.pdf;
@@ -705,17 +841,13 @@ function uploadAttachment(sheetName, fileType){
     const file = e.target.files[0];
     if(!file) return;
     
-    // 1) 直接写进正式 ATTACHMENTS（不再停留在 pendingAttachments 暂存），保证导出 json 时一定带上该图纸映射
-    if(!ATTACHMENTS) ATTACHMENTS = {};
-    if(!ATTACHMENTS[sheetName]) ATTACHMENTS[sheetName] = {};
-    ATTACHMENTS[sheetName][fileType] = {
+    // 1) 记录文件名（不含 base64，文件本体走"保存到本地→脚本推送→仓库 drawings/"链路）
+    if(!pendingAttachments) pendingAttachments = {};
+    if(!pendingAttachments[sheetName]) pendingAttachments[sheetName] = {};
+    pendingAttachments[sheetName][fileType] = {
       name: file.name,
       url: 'drawings/' + file.name
     };
-    // 同步清理暂存区里同 sheet 同类型的旧值，避免冲突
-    if(pendingAttachments && pendingAttachments[sheetName]){
-      delete pendingAttachments[sheetName][fileType];
-    }
     
     // 2) 把图纸文件保存到本地 Downloads，供发布脚本监控（文件名加"图纸_"前缀+sheet+类型便于脚本归属）
     try{
@@ -743,15 +875,9 @@ function safeFileName(name){
 
 // 删除附件
 function deleteAttachment(sheetName, fileType){
-  if(ATTACHMENTS && ATTACHMENTS[sheetName]){
-    delete ATTACHMENTS[sheetName][fileType];
-    // 若该 sheet 下的 dwg/pdf 都删光了，清掉整个 sheet 记录
-    if(!ATTACHMENTS[sheetName].dwg && !ATTACHMENTS[sheetName].pdf){
-      delete ATTACHMENTS[sheetName];
-    }
-  }
+  if(!pendingAttachments || !pendingAttachments[sheetName]) return;
+  delete pendingAttachments[sheetName][fileType];
   renderAttachmentList();
-  updateAttachmentDisplay();
 }
 
 // 前台附件下载区所占的 GitHub Pages 仓库根地址（图纸文件存放于仓库 drawings/ 目录）
@@ -769,16 +895,14 @@ function updateAttachmentDisplay(){
   }
   
   let html = '<div class="sheet-attachments">';
-  html += '<span class="label">附件下载(图纸供参考)：</span>';
+  html += '<span class="label">附件下载：</span>';
   
-  // 第一行：DWG
   if(att.dwg){
     const u = ATTACH_BASE + att.dwg.url;
     html += '<a class="download-link" href="' + u + '" download="' + att.dwg.name + '" target="_blank" rel="noopener">' +
             '<span class="icon">&#128230;</span> DWG：' + att.dwg.name + '</a>';
   }
   
-  // 第二行：PDF
   if(att.pdf){
     const u = ATTACH_BASE + att.pdf.url;
     html += '<a class="download-link" href="' + u + '" download="' + att.pdf.name + '" target="_blank" rel="noopener">' +
@@ -817,8 +941,15 @@ window.onerror = function(msg, url, line, col, error) {
       <select id="sheetSelect"><option value="PL V3落地支架">PL V3落地支架</option></select>
     </div>
     <button class="export-btn" onclick="exportExcel()">导出Excel</button>
-    <div id="attachmentContainer" class="attachment-container"></div>
+    <div id="attachmentContainer" class="attachment-container">
+  <div class="sheet-attachments">
+    <span class="label">附件下载：</span>
+    <a class="download-link" href="data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA2MCA+PgpzdHJlYW0KQlQgL0YxIDI0IFRmIDEwMCA3MDAgVGQgKFBMIFYzIFRlc3QgQXR0YWNobWVudCkgVGogRVQKZW5kc3RyZWFtCmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL0hlbHZldGljYSA+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjY2IDAwMDAwIG4gCjAwMDAwMDAzNzUgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0NTIKJSVFT0Y=" download="PL_V3_安装示意图.pdf">
+      <span class="icon">&#128196;</span> PDF：PL_V3_安装示意图.pdf
+    </a>
   </div>
+</div>
+</div>
 <div id="tableContainer"></div>
 
 <script>
@@ -1903,7 +2034,10 @@ function renderTable(){
     //   若被 isNote 判为备注行，会导致"包边组件"标题无法独立成 section、包边组件表与前一张组件表混在一起，
     //   表头错乱。故凡命中"背条/挂架/包边组件标题"特征的行，一律优先视为 section 标题，不当作备注。
     const isCompTitleLike = /(背条|挂架|包边)\s*组件|Wall Mounted Bracket Components|Trim\s*Components/.test(aVal) && !rowHasDataBeyondA;
-    const isNote = !isCompTitleLike && aVal && /PS：|注：|备注|仅供参考|请勿|暂未|注意/.test(aVal);
+    // 落地支架"Ground Stacking"组件区标题：文字里常带"请注意底座料号有更新"等说明，会被 isNote 误判成备注行
+    // （灰色斜体 note-row），导致它无法作为组件区块的表头/标题显示。这里与组件标题同理，优先视为 section 标题。
+    const isGroundTitleLike = /^落地支架\s*[（(]Ground Stacking/.test(aVal) && !rowHasDataBeyondA;
+    const isNote = !isCompTitleLike && !isGroundTitleLike && aVal && /PS：|注：|备注|仅供参考|请勿|暂未|注意/.test(aVal);
     // 显式"类别"分组标题：用户在新版Excel里以黄色填充+"类别："前缀标记分类标题（如"类别：落地支架..."），
     // 这类行下方的内容即该分类的明细。除第1行主标题外，凡以"类别："开头的一律作为分组标题。
     const isCatSection = /^类别[:：]/.test(aVal) && rNum > 1;
