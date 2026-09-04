@@ -3205,7 +3205,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <!-- 后台维护内容弹窗 -->
 <div class="modal-overlay" id="adminModal">
-  <div class="modal" style="max-width:700px">
+  <div class="modal" style="max-width:600px">
     <div class="modal-header">
       <h3>后台维护 - 数据更新</h3>
       <button class="modal-close" onclick="document.getElementById('adminModal').classList.remove('active');try{closeAdminModal();}catch(e){}">&times;</button>
@@ -3233,7 +3233,7 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
       <div class="admin-actions">
         <button class="btn-cancel" onclick="closeAdminModal()">取消</button>
-        <button onclick="exportDataJson()" style="background:#fa8c16;color:#fff;border:none;padding:8px 20px;border-radius:4px;font-size:13px;cursor:pointer;font-weight:500;">📤 导出JSON数据</button>
+        <button onclick="exportDataJson()" style="background:linear-gradient(135deg,#E78131,#D96C1F);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;box-shadow:0 4px 12px rgba(231,129,49,.30);">📤 导出JSON数据</button>
         <button id="saveBtn" onclick="saveUpdate()" style="display:none; background:#52c41a; color:white; border:none; padding:12px 40px; border-radius:6px; font-size:16px; cursor:pointer; font-weight:bold; margin:20px auto;">💾 确认保存更新</button>
       </div>
     </div>
