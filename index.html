@@ -1051,6 +1051,19 @@ function disp(c){
   return String(v);
 }
 
+// 把文本第一个冒号（中/英文）之后的文字包成红色 span（冒号本身保留正常色），用于标题行"XXX：说明"红色突出说明部分
+function colorAfterColon(text){
+  if(!text) return text;
+  const t = String(text);
+  const m = t.match(/[:：]/);
+  if(m && m.index >= 0 && m.index < t.length - 1){
+    const head = t.slice(0, m.index + 1);
+    const tail = t.slice(m.index + 1);
+    return head + '<span style="color:#D64545;font-weight:inherit;">' + tail + '</span>';
+  }
+  return t;
+}
+
 
 // ========== 公式自动计算 ==========
 function evalExcelFormula(formula, values){
@@ -2116,7 +2129,7 @@ function renderTable(){
     if(rNum === 1){
       if(inSection){html += '</tbody></table></div></div>'; inSection=false;}
       let titleText = /^类别[:：]/.test(aVal) ? aVal.replace(/^类别[:：]\s*/,'') : aVal;
-      html += '<div class="note-bar">'+titleText+'</div>';
+      html += '<div class="note-bar">'+colorAfterColon(titleText)+'</div>';
       continue;
     }
     
@@ -2136,7 +2149,7 @@ function renderTable(){
                           || /^方式[12][:：]/.test(titleText)
                           || /^航空箱Flight Cases/.test(titleText);
       let titleClass = (isCatSection && !isProductSection) ? 'table-section-title cat-section-title' : 'table-section-title';
-      html += '<div class="table-section"><div class="'+titleClass+'">'+titleText+'</div><div class="table-wrapper"><table class="data-table'+extraClass+'"><tbody>';
+      html += '<div class="table-section"><div class="'+titleClass+'">'+colorAfterColon(titleText)+'</div><div class="table-wrapper"><table class="data-table'+extraClass+'"><tbody>';
       inSection = true;
       continue;
     }
