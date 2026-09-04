@@ -943,7 +943,7 @@ function updateAttachmentDisplay(){
   }
   
   let html = '<div class="sheet-attachments">';
-  html += '<span class="label">附件(供参考):</span>';
+  html += '<span class="label">附件下载(图纸供参考):</span>';
   
   if(att.dwg){
     const u = ATTACH_BASE + att.dwg.url;
@@ -991,7 +991,7 @@ window.onerror = function(msg, url, line, col, error) {
     <button class="export-btn" onclick="exportExcel()">导出Excel</button>
     <div id="attachmentContainer" class="attachment-container">
   <div class="sheet-attachments">
-    <span class="label">附件(供参考):</span>
+    <span class="label">附件下载(图纸供参考):</span>
     <a class="download-link" href="data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA2MCA+PgpzdHJlYW0KQlQgL0YxIDI0IFRmIDEwMCA3MDAgVGQgKFBMIFYzIFRlc3QgQXR0YWNobWVudCkgVGogRVQKZW5kc3RyZWFtCmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL0hlbHZldGljYSA+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjY2IDAwMDAwIG4gCjAwMDAwMDAzNzUgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0NTIKJSVFT0Y=" download="PL_V3_安装示意图.pdf">
       <span class="icon">&#128196;</span> PL_V3_安装示意图.pdf
     </a>
