@@ -444,6 +444,42 @@ body,table.data-table td,table.data-table th,.filter-group label,.note-bar,.atta
   .header h1{font-size:19px!important;letter-spacing:1px;}
   body>div[style*="linear-gradient"]{padding:18px 18px 16px 18px!important;}
 }
+
+/* ==================================================================
+   🖋️ 字体视觉强化层 v4 · 更美观更显眼的字体排版
+   ─────────────────────────────────────────
+   升级中文字体栈、增强字重层次、强化标题/表头/关键数据、优化行高可读性
+   ================================================================== */
+/* 1) 全局字体栈升级：优先现代浏览器自带字体，中文更圆润清晰 */
+body{
+  font-family:"PingFang SC","HarmonyOS Sans SC","MiSans","Source Han Sans SC","Microsoft YaHei","微软雅黑",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif!important;
+  font-size:13.5px!important;
+  letter-spacing:.1px;
+}
+/* 2) 顶部主标题：更大更醒目，加字距 */
+body>div[style*="linear-gradient"] h1,.header h1{
+  font-size:25px!important;
+  font-weight:900!important;
+  letter-spacing:2.5px!important;
+  line-height:1.3;
+  text-shadow:0 1px 0 #fff,0 2px 8px rgba(30,58,95,.10)!important;
+}
+body>div[style*="linear-gradient"] p:first-of-type{font-size:13.5px!important;font-weight:800!important;letter-spacing:1px!important;}
+body>div[style*="linear-gradient"] p:last-of-type{font-size:13px!important;line-height:1.8!important;color:#3E5A7E!important;}
+/* 3) 表格表头：更清晰的中英文字重与对比度 */
+.data-table th,.update-log-table th{
+  font-size:14px!important;
+  font-weight:800!important;
+  letter-spacing:.8px!important;
+}
+/* 4) 表格正文：字色加深、加行高，数据更清晰易读 */
+.data-table td,.update-log-table td,table td{font-size:13.5px!important;line-height:1.6!important;color:#2A3038!important;}
+/* 5) 按钮文字：更饱满醒目 */
+.btn,.btn-save,.btn-cancel,.login-btn,.export-btn{font-size:13.5px!important;font-weight:700!important;letter-spacing:.6px!important;}
+/* 6) 输入控件：字体更大更清晰 */
+input,select,textarea{font-size:13.5px!important;font-weight:600!important;}
+/* 7) 附件/文件名等辅助文字：更清晰 */
+.file-label,.attachment-item{font-size:13px!important;font-weight:600!important;}
 </style>
 <script>
 // ========== 后台维护 - Excel导入更新 ==========
