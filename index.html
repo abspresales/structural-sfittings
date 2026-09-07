@@ -359,10 +359,12 @@ table.data-table tr.input-row td{background:#FFF8E3;border-color:#F0E1B8!importa
 input[type=number]{border-color:var(--orange-500);border-radius:6px;background:#FFFDF5;transition:border-color .2s,box-shadow .2s,background .2s;}
 input[type=number]:focus{border-color:var(--orange-500);box-shadow:var(--ring);outline:none;background:#fff;}
 
-/* SAP料号：橙色悬停，呼应参考 */
-.sap-copy-cell{cursor:pointer;border-radius:5px;transition:background .18s,color .18s;}
-.sap-copy-cell:hover{background:var(--cream-50);color:var(--orange-700);}
-.sap-copy-cell.copied{color:#1E8E4E!important;}
+/* 料号复制：对齐方案站订单号样式（背景+虚线框+等宽+深蓝字，hover 提示点击复制） */
+.sap-copy{font-family:Consolas,Monaco,"Courier New",monospace;display:inline-block;padding:3px 9px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.3px;background:#F4F7FB;border:1px dashed #B8C8E0;color:#13506e;transition:all .16s;}
+.sap-copy:hover{background:#FDF4E3;border-color:#E78131;color:#E78131;}
+.sap-copy:active{transform:scale(.95);}
+.sap-copy.copied{background:linear-gradient(135deg,#27AE60,#1E8E4E);color:#fff;border-color:#1E8E4E;box-shadow:0 3px 10px rgba(30,142,78,.35);animation:pop .4s;}
+@keyframes pop{0%{transform:scale(1);}45%{transform:scale(1.10);}100%{transform:scale(1);}}
 
 /* 右下角齿轮：更新履历=橙、后台维护=深蓝灰（对齐线材站悬浮球） */
 .fab-btn{background:linear-gradient(135deg,#5A6B82,#414E63);box-shadow:0 6px 16px rgba(65,78,99,.30);border:2px solid #fff;}
@@ -2370,9 +2372,10 @@ function renderTable(){
         if(split !== rawVal) rawVal = split; // 只有真正中英混合且可拆分时才换行
       }
       let dispVal = rawVal.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-      // SAP料号单元格：点击即可复制料号内容（col-sap 已限定为数据行的SAP料号列）
-      if(tdClass.indexOf('col-sap') >= 0 && val && val.trim() !== ''){
-        html += '<td class="'+tdClass+' sap-copy-cell"'+mergeAttr+excelAlignStyle+' data-sap="'+val.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" onclick="copySAP(this)" title="点击复制SAP料号">'+dispVal+'</td>';
+      // SAP料号单元格：点击即可复制料号内容（col-sap 已限定为数据行的SAP料号列；表头行保持原样不加复制）
+      const _isHdrCell = headerRows.has(rNum) || isInputHeader;
+      if(tdClass.indexOf('col-sap') >= 0 && !_isHdrCell && val && val.trim() !== ''){
+        html += '<td class="'+tdClass+'"'+mergeAttr+excelAlignStyle+'><span class="sap-copy" data-sap="'+val.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" onclick="copySAP(this)" title="点击复制">'+dispVal+'</span></td>';
       } else {
         html += '<td class="'+tdClass+'"'+mergeAttr+excelAlignStyle+'>'+dispVal+'</td>';
       }
