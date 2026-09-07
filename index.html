@@ -90,7 +90,7 @@ table.data-table{table-layout:fixed}
    此处不再使用像素 min-width/max-width，避免强制列宽撑爆容器导致横向滚动。 */
 /* SAP料号列不允许换行：由 JS 给 SAP 料号列单元格加 .col-sap 类，
    white-space:nowrap 保证17位料号单行显示，不折断成多行；列宽由 colgroup 保证 ≥135px 放得下单行。 */
-table.data-table .col-sap{white-space:nowrap}
+table.data-table .col-sap{white-space:nowrap;padding-left:4px!important;padding-right:4px!important;}
 /* SAP料号点击复制：手型光标 + 悬停高亮 + 已复制仅变文字颜色（背景不变，靠"✓已复制"文字提醒） */
 .sap-copy-cell{cursor:pointer;position:relative;border-radius:3px;transition:background .18s ease,color .18s ease}
 .sap-copy-cell:hover{background:#e8f4fd;color:#1a6fb5}
@@ -349,7 +349,7 @@ table.data-table tbody tr{transition:background .16s var(--e-sm);}
 table.data-table tr.section-header td{background:linear-gradient(135deg,#EAF2FC,#DEEBFA)!important;color:#1E3A5F!important;font-weight:700;border-color:rgba(30,58,95,.10)!important;}
 table.data-table tr.input-header td{background:linear-gradient(180deg,#EAF2FC 0%,#DEEBFA 100%)!important;color:#1E3A5F!important;font-weight:700;border-color:rgba(30,58,95,.08)!important;}
 .cat-section-title{background:linear-gradient(135deg,#FBEEDD,#F7DDB4)!important;color:#B85A18!important;border-bottom:2px solid #F0DBA8!important;font-weight:700;}
-.table-section-title{background:linear-gradient(180deg,#EAF2FC 0%,#DEEBFA 100%)!important;color:#1E3A5F!important;font-weight:700;border-bottom:2px solid rgba(30,58,95,.08)!important;}
+.table-section-title{background:linear-gradient(180deg,#EAF2FC 0%,#DEEBFA 100%)!important;color:#1E3A5F!important;font-weight:700;font-size:13.5px!important;border-bottom:2px solid rgba(30,58,95,.08)!important;}
 
 /* note-bar：奶油橙（对齐参考主色） */
 .note-bar{background:linear-gradient(135deg,var(--cream-50),var(--cream-100));border:1px solid #F0DBA8;border-radius:10px;color:var(--orange-700);box-shadow:0 2px 10px rgba(230,126,34,.10);}
@@ -360,7 +360,7 @@ input[type=number]{border-color:var(--orange-500);border-radius:6px;background:#
 input[type=number]:focus{border-color:var(--orange-500);box-shadow:var(--ring);outline:none;background:#fff;}
 
 /* 料号复制：对齐方案站订单号样式（背景+虚线框+等宽+深蓝字，hover 提示点击复制） */
-.sap-copy{font-family:Consolas,Monaco,"Courier New",monospace;display:inline-block;padding:3px 9px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.3px;background:#F4F7FB;border:1px dashed #B8C8E0;color:#13506e;transition:all .16s;}
+.sap-copy{font-family:Consolas,Monaco,"Courier New",monospace;display:inline-block;padding:3px 4px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;letter-spacing:.3px;background:#F4F7FB;border:1px dashed #B8C8E0;color:#13506e;transition:all .16s;}
 .sap-copy:hover{background:#FDF4E3;border-color:#E78131;color:#E78131;}
 .sap-copy:active{transform:scale(.95);}
 .sap-copy.copied{background:linear-gradient(135deg,#27AE60,#1E8E4E);color:#fff;border-color:#1E8E4E;box-shadow:0 3px 10px rgba(30,142,78,.35);animation:pop .4s;}
@@ -1839,9 +1839,9 @@ function applySmartColumnWidths(table){
     // 内容为主，兼顾列类型保底 —— 确保窄列（数量/SAP/重量）不会过分挤压，同时不超宽
     var need = Math.max(headW, dataW, 56);
     // 每种列类型的【最小宽度】——窄列必须保住，长文本列可压（靠换行）
-    var minPx = { name:110, qty:60, sap:135, desc:90, logic:100, weight:78, other:72 }[type] || 72;
+    var minPx = { name:110, qty:60, sap:154, desc:90, logic:100, weight:78, other:72 }[type] || 72;
     // 每种列类型的【期望上限】——避免逻辑/描述列被极长单词/文本撑爆
-    var cap = { name:250, qty:110, sap:165, desc:280, logic:320, weight:120, other:200 }[type] || 240;
+    var cap = { name:250, qty:110, sap:190, desc:280, logic:320, weight:120, other:200 }[type] || 240;
     if(realHeadColspan[ci2] && (type==='desc'||type==='logic')) cap = Math.max(cap, 260); // 多列合并的长文本列给更宽空间
     need = Math.max(need, minPx);
     need = Math.min(need, cap);
