@@ -292,6 +292,9 @@ html,body{overflow-x:hidden;width:100%}
   --text-secondary:#A9B6C9;
   --text-muted:#7C8AA0;
   --border-subtle:#334155;
+  --bg-card:#1E293B;        /* pill 按钮底色-深 */
+  --bg-card-hover:#273449;  /* pill 按钮 hover-深 */
+  --border-hover:#475569;   /* pill 按钮 hover 边框-深 */
 }
 :root[data-theme="light"]{
   --bg-deep:#EFF4FB;      /* 页面主背景-浅 */
@@ -300,6 +303,9 @@ html,body{overflow-x:hidden;width:100%}
   --text-secondary:#3E4E64;
   --text-muted:#6E7E93;
   --border-subtle:#E3EAF3;
+  --bg-card:#FFF;           /* pill 按钮底色-浅 */
+  --bg-card-hover:#F3F7FC;  /* pill 按钮 hover-浅 */
+  --border-hover:#CBD8E8;   /* pill 按钮 hover 边框-浅 */
 }
 html{scroll-behavior:smooth;}
 ::selection{background:rgba(243,156,18,.22);color:inherit;}
@@ -386,6 +392,37 @@ input[type=number]:focus{border-color:var(--orange-500);box-shadow:var(--ring);o
 .fab-btn.history{background:linear-gradient(135deg,var(--orange-500),var(--orange-600));box-shadow:0 6px 18px rgba(230,126,34,.45),0 0 0 4px rgba(243,156,18,.18);}
 .fab-btn.settings{background:linear-gradient(135deg,#5A6B82,#414E63);box-shadow:0 6px 18px rgba(65,78,99,.50),0 0 0 4px rgba(90,107,130,.20);}
 .fab-btn:hover{transform:scale(1.08);filter:none;}
+
+/* ---------- 右上角操作按钮：对齐工具中心顶部(刷新/首页/深色)按钮风格（独立打开时显示） ---------- */
+.top-pill-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:8px;
+  background:var(--bg-card);
+  border:1px solid var(--border-subtle);
+  color:var(--text-secondary);
+  font-size:12px;font-weight:500;
+  font-family:inherit;line-height:1;
+  cursor:pointer;user-select:none;white-space:nowrap;
+  transition:background .2s ease,border-color .2s ease,color .2s ease,transform .2s ease;
+}
+.top-pill-btn:hover{
+  background:var(--bg-card-hover);
+  border-color:var(--border-hover);
+  color:var(--text-primary);
+  transform:translateY(-1px);
+}
+.top-pill-btn:active{transform:translateY(0);}
+.top-pill-btn svg{width:14px;height:14px;stroke:currentColor;flex-shrink:0;}
+/* 右上角操作按钮容器：固定右上角，横向排列 */
+.top-actions-fixed{position:fixed;top:14px;right:16px;display:flex;align-items:center;gap:10px;z-index:1000;}
+/* 被工具中心 iframe 嵌套时：父站顶栏(56px,z-index:20)会盖住 top:14，需把按钮下移到顶栏下方(56px+12px 间隙) */
+html.in-frame .top-actions-fixed{top:68px;}
+@media(max-width:640px){
+  .top-actions-fixed{top:auto;bottom:16px;right:12px;left:12px;justify-content:flex-end;gap:8px;}
+  html.in-frame .top-actions-fixed{top:auto;}
+  .top-pill-btn{font-size:12px;padding:13px 16px;border-radius:10px;}
+  .top-pill-btn svg{width:15px;height:15px;}
+}
 
 /* 弹窗 */
 .modal{border-radius:18px;overflow:hidden;box-shadow:0 30px 100px rgba(14,42,74,.40),0 6px 20px rgba(14,42,74,.16);border:1px solid #E1E8F1;}
@@ -3406,14 +3443,16 @@ document.addEventListener('DOMContentLoaded', function(){
 // 附件数据结构：{ sheetName: { dwg: {name, data, type}, pdf: {name, data, type} } }
 </script>
 
-<!-- 右下角圆形齿轮按钮 -->
-<div class="fab-container">
-  <button class="fab-btn history" onclick="openUpdateLog()" title="更新履历">
-    <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-  </button>
-  <button class="fab-btn settings" onclick="openAdmin()" title="后台维护">
-    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94 0 .31.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-  </button>
+<!-- 右上角操作按钮：对齐工具中心顶部按钮风格（更新履历 / 后台维护），独立打开时显示 -->
+<div class="top-actions-fixed">
+  <div class="top-pill-btn" onclick="openUpdateLog()" title="更新履历" role="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+    <span>更新履历</span>
+  </div>
+  <div class="top-pill-btn" onclick="openAdmin()" title="后台维护" role="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>后台维护</span>
+  </div>
 </div>
 
 <!-- 更新履历弹窗 -->
@@ -3569,10 +3608,11 @@ window.addEventListener('load', async function(){
   var brandBar=document.getElementById('brandBar');
   var inFrame=(window.self!==window.top);
   if(inFrame&&brandBar){brandBar.style.display='none';}
-  // 被工具中心嵌套时隐藏本站右下角「更新履历/后台维护」悬浮球（父站顶栏已提供同名按钮并委托给本站；独立打开仍显示）
+  // 嵌套标记：用于 CSS 下移/隐藏右上角按钮
+  if(inFrame){document.documentElement.className+=' in-frame';}
+  // 被工具中心嵌套时隐藏右上角「更新履历/后台维护」按钮（父站顶栏已提供同名按钮并委托给本站；独立打开仍显示）
   if(inFrame){
-    var _his=document.querySelector('.fab-btn.history');if(_his){_his.style.display='none';}
-    var _set=document.querySelector('.fab-btn.settings');if(_set){_set.style.display='none';}
+    var _act=document.querySelector('.top-actions-fixed');if(_act){_act.style.display='none';}
   }
   function apply(){
     var t=localStorage.getItem(KEY)||'light';   // 默认浅色
