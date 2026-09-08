@@ -3569,6 +3569,11 @@ window.addEventListener('load', async function(){
   var brandBar=document.getElementById('brandBar');
   var inFrame=(window.self!==window.top);
   if(inFrame&&brandBar){brandBar.style.display='none';}
+  // 被工具中心嵌套时隐藏本站右下角「更新履历/后台维护」悬浮球（父站顶栏已提供同名按钮并委托给本站；独立打开仍显示）
+  if(inFrame){
+    var _his=document.querySelector('.fab-btn.history');if(_his){_his.style.display='none';}
+    var _set=document.querySelector('.fab-btn.settings');if(_set){_set.style.display='none';}
+  }
   function apply(){
     var t=localStorage.getItem(KEY)||'light';   // 默认浅色
     if(t!=='dark') t='light';
@@ -3579,6 +3584,11 @@ window.addEventListener('load', async function(){
     var d=e.data||{};
     if(d&&d.type==='presales-theme'&&(d.theme==='dark'||d.theme==='light')){
       localStorage.setItem(KEY,d.theme);apply();
+    }
+    // 父站顶栏「更新履历/后台维护」按钮 → 委托本人打开对应弹窗（各站函数名不同，由本站自行响应）
+    if(d&&d.type==='presales-open-modal'){
+      if(d.modal==='history'&&typeof openUpdateLog==='function'){openUpdateLog();}
+      if(d.modal==='admin'&&typeof openAdmin==='function'){openAdmin();}
     }
   });
   window.addEventListener('storage',function(e){
