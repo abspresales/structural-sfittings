@@ -549,10 +549,10 @@ html[data-theme="dark"] .filter-group label{color:#b9c6d8!important;background:#
 /* 分类/区块标题条 → 深色（覆盖浅蓝渐变 + 深蓝字） */
 html[data-theme="dark"] .table-section-title{background:#1c2430!important;color:#9fc7f5!important;border-bottom-color:#2b3646!important;}
 /* ===== 统一 Token（对齐线材站基准：主表/输入框/按钮/线条 深浅一致） ===== */
-html[data-theme="dark"] table.data-table th{background:#202a38!important;color:#bcd3ec!important;border-bottom-color:#2b3646!important;background-image:none!important;}
-html[data-theme="dark"] table.data-table td{color:#c9d3df!important;border-bottom-color:#25303d!important;}
-html[data-theme="dark"] table.data-table tr.section-header td{background:#1c2430!important;color:#bcd3ec!important;}
-html[data-theme="dark"] table.data-table tr.input-header td{background:#1c2430!important;color:#9fc7f5!important;border-bottom-color:#25303d!important;}
+html[data-theme="dark"] table.data-table th{background:#202a38!important;color:#bcd3ec!important;border-color:#2b3646!important;background-image:none!important;}
+html[data-theme="dark"] table.data-table td{color:#c9d3df!important;border-color:#25303d!important;}
+html[data-theme="dark"] table.data-table tr.section-header td{background:#1c2430!important;color:#bcd3ec!important;border-color:#25303d!important;}
+html[data-theme="dark"] table.data-table tr.input-header td{background:#1c2430!important;color:#9fc7f5!important;border-color:#25303d!important;}
 html[data-theme="dark"] table.data-table tr.input-row td{background:#242f3f!important;border-color:#2b3646!important;color:#e8edf3!important;}
 html[data-theme="dark"] input[type=number],html[data-theme="dark"] table.data-table input{background:#141a22!important;border-color:#34404f!important;color:#e2e9f2!important;border-radius:9px!important;}
 html[data-theme="dark"] .input-reset-btn{background:#1c2430!important;border-color:#34404f!important;color:#8ec9ff!important;}
@@ -593,6 +593,10 @@ html[data-theme="dark"] .login-wrap{background:#1c2430!important;border-color:#2
 html[data-theme="dark"] .login-wrap h3{color:#e8edf3!important;}
 html[data-theme="dark"] .login-wrap input{background:#141a22!important;border-color:#34404f!important;color:#e2e9f2!important;}
 html[data-theme="dark"] .login-error{color:#f08a7a!important;}
+/* ===== 下拉框/输入控件字体统一（对齐全局中文字体栈，避免控件默认 Arial） ===== */
+.combobox-input,.combobox-item,input,select,textarea,.search-bar input,.searchable-select,.filter-group select{
+  font-family:"PingFang SC","HarmonyOS Sans SC","MiSans","Source Han Sans SC","Microsoft YaHei","微软雅黑",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif!important;
+}
 </style>
 <script>
 // ========== 后台维护 - Excel导入更新 ==========
